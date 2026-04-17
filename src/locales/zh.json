@@ -42,6 +42,7 @@
     "uploadHint": "如果現場掃描沒有反應，可改用拍照或從相簿上傳收據 QR Code。",
     "uploadFailed": "照片中無法辨識 QR Code，請拍清楚一點或改用手動輸入",
     "tapToResume": "畫面被瀏覽器暫停了，請點一下相機畫面以恢復",
+    "rescan": "重新掃描",
     "back": "返回"
   },
   "manual": {
