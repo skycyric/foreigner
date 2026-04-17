@@ -3,6 +3,7 @@ import { Suspense } from "react";
 
 import appCss from "../styles.css?url";
 import "@/lib/i18n";
+import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
   return (
@@ -63,6 +64,7 @@ function RootComponent() {
   return (
     <Suspense fallback={null}>
       <Outlet />
+      <Toaster position="top-center" richColors />
     </Suspense>
   );
 }
