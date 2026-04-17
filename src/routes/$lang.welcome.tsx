@@ -28,6 +28,13 @@ function WelcomePage() {
   const [agree, setAgree] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    const stored = getStoredEmail();
+    if (stored) {
+      navigate({ to: "/$lang/coupons", params: { lang }, replace: true });
+    }
+  }, [lang, navigate]);
+
   const isCustom = domain === "__custom__";
   const finalDomain = isCustom ? customDomain.trim() : domain;
   const email = `${account.trim()}@${finalDomain}`;
