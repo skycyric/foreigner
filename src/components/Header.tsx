@@ -1,7 +1,7 @@
 import { Link, useNavigate, useParams, useRouter, useLocation } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { ChevronLeft } from "lucide-react";
-import { isSupportedLang, SUPPORTED_LANGS } from "@/lib/i18n";
+import { isSupportedLang, SUPPORTED_LANGS, storeLang } from "@/lib/i18n";
 
 export function Header() {
   const { t } = useTranslation();
@@ -50,6 +50,7 @@ export function Header() {
           onChange={(e) => {
             const next = e.target.value;
             if (!isSupportedLang(next)) return;
+            storeLang(next);
             navigate({ to: "/$lang", params: { lang: next } });
           }}
           className="h-8 rounded-md border border-input bg-background px-2 text-xs"
