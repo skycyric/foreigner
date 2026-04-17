@@ -14,7 +14,151 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      coupons: {
+        Row: {
+          assigned_at: string | null
+          coupon_code: string
+          created_at: string
+          email: string | null
+          note: string | null
+          used_at: string | null
+        }
+        Insert: {
+          assigned_at?: string | null
+          coupon_code: string
+          created_at?: string
+          email?: string | null
+          note?: string | null
+          used_at?: string | null
+        }
+        Update: {
+          assigned_at?: string | null
+          coupon_code?: string
+          created_at?: string
+          email?: string | null
+          note?: string | null
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupons_email_fkey"
+            columns: ["email"]
+            isOneToOne: false
+            referencedRelation: "participants"
+            referencedColumns: ["email"]
+          },
+        ]
+      }
+      lottery_entries: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          raw_payload: string | null
+          source: string
+          tn_number: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          raw_payload?: string | null
+          source?: string
+          tn_number: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          raw_payload?: string | null
+          source?: string
+          tn_number?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lottery_entries_email_fkey"
+            columns: ["email"]
+            isOneToOne: false
+            referencedRelation: "participants"
+            referencedColumns: ["email"]
+          },
+        ]
+      }
+      participants: {
+        Row: {
+          created_at: string
+          device_id: string | null
+          email: string
+          language: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          device_id?: string | null
+          email: string
+          language?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          device_id?: string | null
+          email?: string
+          language?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      valid_transactions: {
+        Row: {
+          amount: number | null
+          created_at: string
+          store_code: string | null
+          tn_number: string
+          txn_date: string | null
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          store_code?: string | null
+          tn_number: string
+          txn_date?: string | null
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          store_code?: string | null
+          tn_number?: string
+          txn_date?: string | null
+        }
+        Relationships: []
+      }
+      winners: {
+        Row: {
+          announced_at: string
+          id: string
+          is_backup: boolean
+          masked_email: string
+          prize_name: string
+          rank: number
+        }
+        Insert: {
+          announced_at?: string
+          id?: string
+          is_backup?: boolean
+          masked_email: string
+          prize_name: string
+          rank?: number
+        }
+        Update: {
+          announced_at?: string
+          id?: string
+          is_backup?: boolean
+          masked_email?: string
+          prize_name?: string
+          rank?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
