@@ -1,32 +1,20 @@
 import { Link, useNavigate, useParams, useRouter, useLocation } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { useEffect } from "react";
 import { ChevronLeft } from "lucide-react";
-import i18n, { isSupportedLang, SUPPORTED_LANGS } from "@/lib/i18n";
+import { isSupportedLang, SUPPORTED_LANGS } from "@/lib/i18n";
 
 export function Header() {
+  const { t } = useTranslation();
   const params = useParams({ strict: false }) as { lang?: string };
   const lang = isSupportedLang(params.lang) ? params.lang : "zh";
-  // 同步切換語言，必須在 render 期間執行（而非 useEffect），否則 SSR/CSR 會不一致
-  if (i18n.language !== lang) {
-    i18n.changeLanguage(lang);
-  }
-  const { t } = useTranslation();
   const navigate = useNavigate();
   const router = useRouter();
   const location = useLocation();
 
-  useEffect(() => {
-    if (typeof document !== "undefined") document.documentElement.lang = lang;
-  }, [lang]);
-
-  // 路徑樣式：/zh、/zh/、/zh/welcome … 取出 lang 後面的子路徑
   const subPath = location.pathname.replace(/^\/[a-z]{2}\/?/, "");
-  // 首頁、註冊頁、結果頁不需要返回鈕（首頁＝起點；welcome 是入口；result 是終點）
   const hideBack = subPath === "" || subPath === "welcome" || subPath === "result";
 
   function handleBack() {
-    // 若有上一頁就 back，否則回首頁
     if (typeof window !== "undefined" && window.history.length > 1) {
       router.history.back();
     } else {
