@@ -173,6 +173,7 @@ function ScanPage() {
     setScannerReady(false);
 
     const scanner = new Html5Qrcode(containerId, {
+      verbose: false,
       formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
       useBarCodeDetectorIfSupported: true,
     });
