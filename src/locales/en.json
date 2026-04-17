@@ -33,6 +33,14 @@
     "title": "Scan Receipt QR Code",
     "hint": "Allow camera access and align the QR code in the frame",
     "permissionDenied": "Camera permission denied. Please use manual input instead.",
+    "noCamera": "No camera was found. Please upload a photo or use manual input instead.",
+    "startFailed": "Camera failed to start. Please upload a photo or use manual input instead.",
+    "starting": "Starting camera…",
+    "ready": "Camera is ready. Move the QR code closer and keep it centered.",
+    "processing": "Reading receipt…",
+    "uploadBtn": "Upload Photo",
+    "uploadHint": "If live scanning does not react, take a photo or upload a receipt image instead.",
+    "uploadFailed": "The QR code could not be read from the photo. Please try a clearer image or enter it manually.",
     "back": "Back"
   },
   "manual": {
