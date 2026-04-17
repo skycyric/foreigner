@@ -1,12 +1,12 @@
 import { createFileRoute, useNavigate, useParams, Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PageShell } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { api } from "@/lib/api";
-import { getDeviceId, setStoredEmail } from "@/lib/device";
+import { getDeviceId, getStoredEmail, setStoredEmail } from "@/lib/device";
 import { toast } from "sonner";
 
 const DOMAINS = ["gmail.com", "yahoo.com.tw", "hotmail.com", "icloud.com", "outlook.com"];
@@ -27,6 +27,13 @@ function WelcomePage() {
   const [customDomain, setCustomDomain] = useState("");
   const [agree, setAgree] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const stored = getStoredEmail();
+    if (stored) {
+      navigate({ to: "/$lang/coupons", params: { lang }, replace: true });
+    }
+  }, [lang, navigate]);
 
   const isCustom = domain === "__custom__";
   const finalDomain = isCustom ? customDomain.trim() : domain;
