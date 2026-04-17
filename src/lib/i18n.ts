@@ -14,13 +14,47 @@ export function isSupportedLang(s: string | undefined): s is Lang {
   return !!s && (SUPPORTED_LANGS as readonly string[]).includes(s);
 }
 
+const LANG_STORAGE_KEY = "preferred-lang";
+
 export function detectBrowserLang(): Lang {
   if (typeof navigator === "undefined") return "zh";
-  const raw = (navigator.language || "zh").toLowerCase();
-  if (raw.startsWith("zh")) return "zh";
-  if (raw.startsWith("ja")) return "ja";
-  if (raw.startsWith("ko")) return "ko";
+  // 同時考慮 navigator.languages（使用者完整語言偏好清單）與 navigator.language
+  const candidates: string[] = [
+    ...(Array.isArray(navigator.languages) ? navigator.languages : []),
+    navigator.language || "",
+  ].map((l) => (l || "").toLowerCase());
+
+  for (const raw of candidates) {
+    if (!raw) continue;
+    if (raw.startsWith("zh")) return "zh";
+    if (raw.startsWith("ja")) return "ja";
+    if (raw.startsWith("ko")) return "ko";
+    if (raw.startsWith("en")) return "en";
+  }
   return "en";
+}
+
+export function getStoredLang(): Lang | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const v = window.localStorage.getItem(LANG_STORAGE_KEY);
+    return isSupportedLang(v ?? undefined) ? (v as Lang) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function storeLang(lang: Lang): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(LANG_STORAGE_KEY, lang);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function resolvePreferredLang(): Lang {
+  return getStoredLang() ?? detectBrowserLang();
 }
 
 if (!i18n.isInitialized) {
