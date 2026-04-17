@@ -1,7 +1,9 @@
-import { createFileRoute, Link, useParams } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
+import { useEffect } from "react";
 import { PageShell } from "@/components/Header";
 import { Button } from "@/components/ui/button";
+import { getStoredEmail } from "@/lib/device";
 
 export const Route = createFileRoute("/$lang/")({
   head: ({ params }) => ({
