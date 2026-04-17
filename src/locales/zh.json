@@ -1,0 +1,77 @@
+{
+  "brand": "幸運抽獎",
+  "nav": { "home": "首頁", "about": "活動辦法", "terms": "個資條款", "winners": "中獎名單" },
+  "lang": { "label": "語言", "zh": "繁體中文", "en": "English", "ja": "日本語", "ko": "한국어" },
+  "home": {
+    "title": "感謝惠顧 立即登錄抽好禮",
+    "subtitle": "輸入 Email 領取折扣券，憑交易單登錄抽獎",
+    "cta": "立即登錄"
+  },
+  "welcome": {
+    "title": "輸入您的 Email",
+    "hint": "我們會以此 Email 通知您中獎結果",
+    "account": "帳號",
+    "domain": "網域",
+    "customDomain": "自訂網域",
+    "agree": "我已閱讀並同意",
+    "terms": "個資使用條款",
+    "submit": "領取折扣券",
+    "invalidAccount": "請輸入正確的帳號",
+    "invalidDomain": "請選擇或輸入網域",
+    "mustAgree": "請先勾選同意條款"
+  },
+  "coupons": {
+    "title": "我的折扣券",
+    "empty": "目前尚未配發折扣券",
+    "lotteryHint": "下方掃描或輸入交易單號，即可登錄抽獎",
+    "scanBtn": "掃描交易單 QR Code",
+    "manualBtn": "手動輸入交易單號",
+    "viewWinners": "查看中獎名單",
+    "changeEmail": "更換 Email"
+  },
+  "scan": {
+    "title": "掃描交易單 QR Code",
+    "hint": "請允許相機權限，將 QR Code 對準框內",
+    "permissionDenied": "無法取得相機權限，請改用手動輸入",
+    "back": "返回"
+  },
+  "manual": {
+    "title": "手動輸入交易單號",
+    "hint": "格式：兩碼英文 + 數字（例：YA2101223580）",
+    "letters": "英文",
+    "digits": "數字",
+    "submit": "送出登錄",
+    "invalidFormat": "格式不正確，請輸入兩碼英文後接數字",
+    "notFound": "查無此交易單，請確認後再試",
+    "alreadyUsed": "此交易單已參加過抽獎"
+  },
+  "result": {
+    "successTitle": "登錄成功！",
+    "successMsg": "您已成功登錄抽獎，中獎結果將以 Email 通知，敬請期待。",
+    "tnLabel": "交易單號",
+    "again": "繼續登錄下一張",
+    "home": "返回首頁"
+  },
+  "winners": {
+    "title": "中獎名單",
+    "rank": "名次",
+    "prize": "獎品",
+    "email": "Email",
+    "backup": "候補",
+    "empty": "中獎名單尚未公佈"
+  },
+  "about": {
+    "title": "活動辦法",
+    "body": "1. 凡於活動期間消費，即可至本頁登錄抽獎。\n2. 同一 Email 可登錄多筆交易單，但同一張交易單僅能登錄一次。\n3. 折扣券依消費金額配發，可於下次消費使用。\n4. 中獎結果將以 Email 通知，請填寫常用信箱。"
+  },
+  "terms": {
+    "title": "個資使用條款",
+    "body": "您所提供的 Email 僅作為本次抽獎活動之通知與聯絡使用，活動結束後將依個資法規範保存與銷毀。"
+  },
+  "common": {
+    "loading": "載入中…",
+    "back": "返回",
+    "confirm": "確認",
+    "cancel": "取消"
+  }
+}

@@ -9,38 +9,168 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as LangRouteImport } from './routes/$lang'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LangIndexRouteImport } from './routes/$lang.index'
+import { Route as LangWinnersRouteImport } from './routes/$lang.winners'
+import { Route as LangWelcomeRouteImport } from './routes/$lang.welcome'
+import { Route as LangTermsRouteImport } from './routes/$lang.terms'
+import { Route as LangScanRouteImport } from './routes/$lang.scan'
+import { Route as LangResultRouteImport } from './routes/$lang.result'
+import { Route as LangManualRouteImport } from './routes/$lang.manual'
+import { Route as LangCouponsRouteImport } from './routes/$lang.coupons'
+import { Route as LangAboutRouteImport } from './routes/$lang.about'
 
+const LangRoute = LangRouteImport.update({
+  id: '/$lang',
+  path: '/$lang',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LangIndexRoute = LangIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => LangRoute,
+} as any)
+const LangWinnersRoute = LangWinnersRouteImport.update({
+  id: '/winners',
+  path: '/winners',
+  getParentRoute: () => LangRoute,
+} as any)
+const LangWelcomeRoute = LangWelcomeRouteImport.update({
+  id: '/welcome',
+  path: '/welcome',
+  getParentRoute: () => LangRoute,
+} as any)
+const LangTermsRoute = LangTermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => LangRoute,
+} as any)
+const LangScanRoute = LangScanRouteImport.update({
+  id: '/scan',
+  path: '/scan',
+  getParentRoute: () => LangRoute,
+} as any)
+const LangResultRoute = LangResultRouteImport.update({
+  id: '/result',
+  path: '/result',
+  getParentRoute: () => LangRoute,
+} as any)
+const LangManualRoute = LangManualRouteImport.update({
+  id: '/manual',
+  path: '/manual',
+  getParentRoute: () => LangRoute,
+} as any)
+const LangCouponsRoute = LangCouponsRouteImport.update({
+  id: '/coupons',
+  path: '/coupons',
+  getParentRoute: () => LangRoute,
+} as any)
+const LangAboutRoute = LangAboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => LangRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/$lang': typeof LangRouteWithChildren
+  '/$lang/about': typeof LangAboutRoute
+  '/$lang/coupons': typeof LangCouponsRoute
+  '/$lang/manual': typeof LangManualRoute
+  '/$lang/result': typeof LangResultRoute
+  '/$lang/scan': typeof LangScanRoute
+  '/$lang/terms': typeof LangTermsRoute
+  '/$lang/welcome': typeof LangWelcomeRoute
+  '/$lang/winners': typeof LangWinnersRoute
+  '/$lang/': typeof LangIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/$lang/about': typeof LangAboutRoute
+  '/$lang/coupons': typeof LangCouponsRoute
+  '/$lang/manual': typeof LangManualRoute
+  '/$lang/result': typeof LangResultRoute
+  '/$lang/scan': typeof LangScanRoute
+  '/$lang/terms': typeof LangTermsRoute
+  '/$lang/welcome': typeof LangWelcomeRoute
+  '/$lang/winners': typeof LangWinnersRoute
+  '/$lang': typeof LangIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/$lang': typeof LangRouteWithChildren
+  '/$lang/about': typeof LangAboutRoute
+  '/$lang/coupons': typeof LangCouponsRoute
+  '/$lang/manual': typeof LangManualRoute
+  '/$lang/result': typeof LangResultRoute
+  '/$lang/scan': typeof LangScanRoute
+  '/$lang/terms': typeof LangTermsRoute
+  '/$lang/welcome': typeof LangWelcomeRoute
+  '/$lang/winners': typeof LangWinnersRoute
+  '/$lang/': typeof LangIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/$lang'
+    | '/$lang/about'
+    | '/$lang/coupons'
+    | '/$lang/manual'
+    | '/$lang/result'
+    | '/$lang/scan'
+    | '/$lang/terms'
+    | '/$lang/welcome'
+    | '/$lang/winners'
+    | '/$lang/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/$lang/about'
+    | '/$lang/coupons'
+    | '/$lang/manual'
+    | '/$lang/result'
+    | '/$lang/scan'
+    | '/$lang/terms'
+    | '/$lang/welcome'
+    | '/$lang/winners'
+    | '/$lang'
+  id:
+    | '__root__'
+    | '/'
+    | '/$lang'
+    | '/$lang/about'
+    | '/$lang/coupons'
+    | '/$lang/manual'
+    | '/$lang/result'
+    | '/$lang/scan'
+    | '/$lang/terms'
+    | '/$lang/welcome'
+    | '/$lang/winners'
+    | '/$lang/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  LangRoute: typeof LangRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/$lang': {
+      id: '/$lang'
+      path: '/$lang'
+      fullPath: '/$lang'
+      preLoaderRoute: typeof LangRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,12 +178,111 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/$lang/': {
+      id: '/$lang/'
+      path: '/'
+      fullPath: '/$lang/'
+      preLoaderRoute: typeof LangIndexRouteImport
+      parentRoute: typeof LangRoute
+    }
+    '/$lang/winners': {
+      id: '/$lang/winners'
+      path: '/winners'
+      fullPath: '/$lang/winners'
+      preLoaderRoute: typeof LangWinnersRouteImport
+      parentRoute: typeof LangRoute
+    }
+    '/$lang/welcome': {
+      id: '/$lang/welcome'
+      path: '/welcome'
+      fullPath: '/$lang/welcome'
+      preLoaderRoute: typeof LangWelcomeRouteImport
+      parentRoute: typeof LangRoute
+    }
+    '/$lang/terms': {
+      id: '/$lang/terms'
+      path: '/terms'
+      fullPath: '/$lang/terms'
+      preLoaderRoute: typeof LangTermsRouteImport
+      parentRoute: typeof LangRoute
+    }
+    '/$lang/scan': {
+      id: '/$lang/scan'
+      path: '/scan'
+      fullPath: '/$lang/scan'
+      preLoaderRoute: typeof LangScanRouteImport
+      parentRoute: typeof LangRoute
+    }
+    '/$lang/result': {
+      id: '/$lang/result'
+      path: '/result'
+      fullPath: '/$lang/result'
+      preLoaderRoute: typeof LangResultRouteImport
+      parentRoute: typeof LangRoute
+    }
+    '/$lang/manual': {
+      id: '/$lang/manual'
+      path: '/manual'
+      fullPath: '/$lang/manual'
+      preLoaderRoute: typeof LangManualRouteImport
+      parentRoute: typeof LangRoute
+    }
+    '/$lang/coupons': {
+      id: '/$lang/coupons'
+      path: '/coupons'
+      fullPath: '/$lang/coupons'
+      preLoaderRoute: typeof LangCouponsRouteImport
+      parentRoute: typeof LangRoute
+    }
+    '/$lang/about': {
+      id: '/$lang/about'
+      path: '/about'
+      fullPath: '/$lang/about'
+      preLoaderRoute: typeof LangAboutRouteImport
+      parentRoute: typeof LangRoute
+    }
   }
 }
 
+interface LangRouteChildren {
+  LangAboutRoute: typeof LangAboutRoute
+  LangCouponsRoute: typeof LangCouponsRoute
+  LangManualRoute: typeof LangManualRoute
+  LangResultRoute: typeof LangResultRoute
+  LangScanRoute: typeof LangScanRoute
+  LangTermsRoute: typeof LangTermsRoute
+  LangWelcomeRoute: typeof LangWelcomeRoute
+  LangWinnersRoute: typeof LangWinnersRoute
+  LangIndexRoute: typeof LangIndexRoute
+}
+
+const LangRouteChildren: LangRouteChildren = {
+  LangAboutRoute: LangAboutRoute,
+  LangCouponsRoute: LangCouponsRoute,
+  LangManualRoute: LangManualRoute,
+  LangResultRoute: LangResultRoute,
+  LangScanRoute: LangScanRoute,
+  LangTermsRoute: LangTermsRoute,
+  LangWelcomeRoute: LangWelcomeRoute,
+  LangWinnersRoute: LangWinnersRoute,
+  LangIndexRoute: LangIndexRoute,
+}
+
+const LangRouteWithChildren = LangRoute._addFileChildren(LangRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  LangRoute: LangRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
