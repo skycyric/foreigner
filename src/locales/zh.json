@@ -27,7 +27,7 @@
     "scanBtn": "掃描交易單 QR Code",
     "manualBtn": "手動輸入交易單號",
     "viewWinners": "查看中獎名單",
-    "changeEmail": "更換 Email"
+    "changeEmail": "重新輸入 Email"
   },
   "scan": {
     "title": "掃描交易單 QR Code",
