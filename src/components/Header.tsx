@@ -50,6 +50,7 @@ export function Header() {
           onChange={(e) => {
             const next = e.target.value;
             if (!isSupportedLang(next)) return;
+            storeLang(next);
             navigate({ to: "/$lang", params: { lang: next } });
           }}
           className="h-8 rounded-md border border-input bg-background px-2 text-xs"
