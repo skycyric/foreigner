@@ -49,8 +49,11 @@ function ScanPage() {
   const startedRef = useRef(false);
   const busyRef = useRef(false);
   const cancelledRef = useRef(false);
+  const blockedRef = useRef(false);
+  const processedTnsRef = useRef<Set<string>>(new Set());
   const restartScannerRef = useRef<null | (() => Promise<void>)>(null);
   const [error, setError] = useState<string | null>(null);
+  const [blockingError, setBlockingError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [fileScanning, setFileScanning] = useState(false);
   const [scannerReady, setScannerReady] = useState(false);
