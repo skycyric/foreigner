@@ -19,6 +19,15 @@ export const Route = createFileRoute("/$lang/")({
 function HomePage() {
   const { t } = useTranslation();
   const { lang } = useParams({ from: "/$lang/" });
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const stored = getStoredEmail();
+    if (stored) {
+      navigate({ to: "/$lang/coupons", params: { lang }, replace: true });
+    }
+  }, [lang, navigate]);
+
   return (
     <PageShell>
       <div className="space-y-8">
