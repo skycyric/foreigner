@@ -1,0 +1,72 @@
+{
+  "brand": "럭키 드로우",
+  "nav": { "home": "홈", "about": "이벤트 안내", "terms": "개인정보", "winners": "당첨자" },
+  "lang": { "label": "언어", "zh": "繁體中文", "en": "English", "ja": "日本語", "ko": "한국어" },
+  "home": {
+    "title": "방문해 주셔서 감사합니다. 지금 등록하세요",
+    "subtitle": "이메일로 쿠폰 받고 영수증으로 추첨 참여",
+    "cta": "지금 등록"
+  },
+  "welcome": {
+    "title": "이메일 입력",
+    "hint": "당첨 결과는 이 이메일로 안내됩니다",
+    "account": "계정",
+    "domain": "도메인",
+    "customDomain": "직접 입력",
+    "agree": "다음에 동의합니다:",
+    "terms": "개인정보 약관",
+    "submit": "쿠폰 받기",
+    "invalidAccount": "올바른 계정을 입력하세요",
+    "invalidDomain": "도메인을 선택 또는 입력하세요",
+    "mustAgree": "약관에 먼저 동의해 주세요"
+  },
+  "coupons": {
+    "title": "내 쿠폰",
+    "empty": "아직 발급된 쿠폰이 없습니다",
+    "lotteryHint": "아래에서 영수증 번호를 등록하면 추첨에 참여합니다",
+    "scanBtn": "영수증 QR 스캔",
+    "manualBtn": "영수증 번호 입력",
+    "viewWinners": "당첨자 보기",
+    "changeEmail": "이메일 변경"
+  },
+  "scan": {
+    "title": "영수증 QR 스캔",
+    "hint": "카메라를 허용하고 QR을 프레임에 맞추세요",
+    "permissionDenied": "카메라 권한이 없습니다. 수동 입력을 사용하세요.",
+    "back": "뒤로"
+  },
+  "manual": {
+    "title": "영수증 번호 입력",
+    "hint": "형식: 영문 2자 + 숫자 (예: YA2101223580)",
+    "letters": "영문",
+    "digits": "숫자",
+    "submit": "제출",
+    "invalidFormat": "형식이 잘못되었습니다",
+    "notFound": "영수증을 찾을 수 없습니다",
+    "alreadyUsed": "이미 등록된 영수증입니다"
+  },
+  "result": {
+    "successTitle": "등록 완료!",
+    "successMsg": "추첨에 참여하였습니다. 결과는 이메일로 알려드립니다.",
+    "tnLabel": "영수증 번호",
+    "again": "다음 영수증 등록",
+    "home": "홈으로"
+  },
+  "winners": {
+    "title": "당첨자",
+    "rank": "순위",
+    "prize": "상품",
+    "email": "이메일",
+    "backup": "후보",
+    "empty": "아직 발표되지 않았습니다"
+  },
+  "about": {
+    "title": "이벤트 안내",
+    "body": "1. 행사 기간 구매 시 추첨 참여 가능.\n2. 동일 이메일로 여러 영수증 등록 가능, 동일 영수증은 1회만.\n3. 쿠폰은 구매 금액에 따라 발급.\n4. 결과는 이메일로 통지."
+  },
+  "terms": {
+    "title": "개인정보 약관",
+    "body": "제공하신 이메일은 본 행사 알림 용도로만 사용되며 관련 법령에 따라 관리됩니다."
+  },
+  "common": { "loading": "로딩 중…", "back": "뒤로", "confirm": "확인", "cancel": "취소" }
+}

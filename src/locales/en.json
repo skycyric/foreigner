@@ -1,0 +1,77 @@
+{
+  "brand": "Lucky Draw",
+  "nav": { "home": "Home", "about": "Rules", "terms": "Privacy", "winners": "Winners" },
+  "lang": { "label": "Language", "zh": "繁體中文", "en": "English", "ja": "日本語", "ko": "한국어" },
+  "home": {
+    "title": "Thank You! Register Now to Win",
+    "subtitle": "Enter your email for a discount coupon and join the lucky draw with your receipt",
+    "cta": "Get Started"
+  },
+  "welcome": {
+    "title": "Enter Your Email",
+    "hint": "We will notify the winners by this email",
+    "account": "Account",
+    "domain": "Domain",
+    "customDomain": "Custom domain",
+    "agree": "I have read and agree to the",
+    "terms": "Privacy Terms",
+    "submit": "Get Coupon",
+    "invalidAccount": "Please enter a valid account",
+    "invalidDomain": "Please choose or enter a domain",
+    "mustAgree": "Please agree to the terms first"
+  },
+  "coupons": {
+    "title": "My Coupons",
+    "empty": "No coupons assigned yet",
+    "lotteryHint": "Scan or enter your receipt number below to enter the draw",
+    "scanBtn": "Scan Receipt QR Code",
+    "manualBtn": "Enter Receipt Number",
+    "viewWinners": "View Winners",
+    "changeEmail": "Change Email"
+  },
+  "scan": {
+    "title": "Scan Receipt QR Code",
+    "hint": "Allow camera access and align the QR code in the frame",
+    "permissionDenied": "Camera permission denied. Please use manual input instead.",
+    "back": "Back"
+  },
+  "manual": {
+    "title": "Enter Receipt Number",
+    "hint": "Format: 2 letters + digits (e.g. YA2101223580)",
+    "letters": "Letters",
+    "digits": "Digits",
+    "submit": "Submit",
+    "invalidFormat": "Invalid format. Please enter 2 letters followed by digits.",
+    "notFound": "Receipt not found. Please check and try again.",
+    "alreadyUsed": "This receipt has already been used."
+  },
+  "result": {
+    "successTitle": "Registered!",
+    "successMsg": "You have entered the draw. Results will be sent by email.",
+    "tnLabel": "Receipt #",
+    "again": "Enter Another",
+    "home": "Back to Home"
+  },
+  "winners": {
+    "title": "Winners",
+    "rank": "Rank",
+    "prize": "Prize",
+    "email": "Email",
+    "backup": "Backup",
+    "empty": "Winners not announced yet"
+  },
+  "about": {
+    "title": "Event Rules",
+    "body": "1. Any purchase during the event qualifies for the draw.\n2. One email can register multiple receipts, but each receipt can only be registered once.\n3. Coupons are issued based on purchase amount.\n4. Winners will be notified by email."
+  },
+  "terms": {
+    "title": "Privacy Terms",
+    "body": "Your email is collected solely for this event's notifications and will be handled per applicable privacy laws."
+  },
+  "common": {
+    "loading": "Loading…",
+    "back": "Back",
+    "confirm": "OK",
+    "cancel": "Cancel"
+  }
+}
