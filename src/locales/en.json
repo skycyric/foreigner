@@ -31,8 +31,13 @@
   },
   "scan": {
     "title": "Scan Receipt QR Code",
-    "hint": "Allow camera access and align the QR code in the frame",
-    "permissionDenied": "Camera permission denied. Please use manual input instead.",
+    "hint": "Tap the button below to start the camera and align the QR code in the frame",
+    "startBtn": "📷 Start Camera",
+    "stopBtn": "Stop",
+    "uploadBtn": "🖼️ Upload Photo",
+    "scanning": "Scanning…",
+    "permissionDenied": "Camera permission denied. Please use manual input or upload a photo.",
+    "decodeFailed": "Could not read QR code from the photo. Please try manual input.",
     "back": "Back"
   },
   "manual": {
