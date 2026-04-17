@@ -235,7 +235,8 @@ function ScanPage() {
     const scanner = new Html5Qrcode(containerId, {
       verbose: false,
       formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
-      useBarCodeDetectorIfSupported: true,
+      // 關閉原生 BarcodeDetector：Android Chrome 上常見「啟動成功但永遠不回傳結果」
+      useBarCodeDetectorIfSupported: false,
     });
     scannerRef.current = scanner;
 
@@ -255,22 +256,21 @@ function ScanPage() {
           preferredCamera?.id ?? { facingMode: { ideal: "environment" } },
           {
             fps: 10,
-            aspectRatio: 1,
-            disableFlip: true,
+            // 不要強制 aspectRatio：Android 上會讓 stream 不符 constraint 造成黑畫面
+            // 不要 disableFlip：Android sensor 旋轉常與顯示不一致，需嘗試兩個方向
             qrbox: (viewfinderWidth, viewfinderHeight) => {
-              const edge = Math.max(
-                180,
-                Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.72),
-              );
+              const w = Math.max(1, viewfinderWidth);
+              const h = Math.max(1, viewfinderHeight);
+              const edge = Math.max(180, Math.floor(Math.min(w, h) * 0.7));
               return {
-                width: Math.min(edge, viewfinderWidth),
-                height: Math.min(edge, viewfinderHeight),
+                width: Math.min(edge, w),
+                height: Math.min(edge, h),
               };
             },
             videoConstraints: {
               facingMode: { ideal: "environment" },
-              width: { ideal: 1920 },
-              height: { ideal: 1080 },
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
             },
           },
           (decodedText) => {
