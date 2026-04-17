@@ -84,7 +84,12 @@ function ScanPage() {
 
   const processDecodedText = useCallback(
     async (decodedText: string) => {
-      if (busyRef.current || cancelledRef.current) return;
+      if (busyRef.current || cancelledRef.current || blockedRef.current) return;
+
+      const tn = extractTn(decodedText);
+      // 防止同一張單在這次掃描期間被反覆觸發
+      if (processedTnsRef.current.has(tn)) return;
+      processedTnsRef.current.add(tn);
 
       let navigatingAway = false;
       setBusyState(true);
@@ -98,14 +103,21 @@ function ScanPage() {
           return;
         }
 
-        const tn = extractTn(decodedText);
         const lookup = await api.lookupTransaction({ tn });
         if (!lookup.found) {
-          toast.error(t("manual.notFound"));
+          const msg = t("manual.notFound");
+          blockedRef.current = true;
+          setBlockingError(msg);
+          toast.error(msg);
+          await stopScanner();
           return;
         }
         if (lookup.alreadyUsed) {
-          toast.error(t("manual.alreadyUsed"));
+          const msg = t("manual.alreadyUsed");
+          blockedRef.current = true;
+          setBlockingError(msg);
+          toast.error(msg);
+          await stopScanner();
           return;
         }
 
@@ -122,6 +134,8 @@ function ScanPage() {
       } catch (e) {
         console.error(e);
         toast.error(String(e));
+        // 發生錯誤時讓使用者可重試此 TN
+        processedTnsRef.current.delete(tn);
       } finally {
         if (!navigatingAway && !cancelledRef.current) {
           setBusyState(false);
@@ -130,6 +144,16 @@ function ScanPage() {
     },
     [lang, navigate, setBusyState, stopScanner, t],
   );
+
+  const handleRescan = useCallback(async () => {
+    blockedRef.current = false;
+    processedTnsRef.current.clear();
+    setBlockingError(null);
+    setError(null);
+    if (!startedRef.current) {
+      await restartScannerRef.current?.();
+    }
+  }, []);
 
   async function handleSelectPhoto(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
