@@ -33,6 +33,14 @@
     "title": "掃描交易單 QR Code",
     "hint": "請允許相機權限，將 QR Code 對準框內",
     "permissionDenied": "無法取得相機權限，請改用手動輸入",
+    "noCamera": "找不到可用相機，請改用照片上傳或手動輸入",
+    "startFailed": "相機啟動失敗，請改用照片上傳或手動輸入",
+    "starting": "正在啟動相機…",
+    "ready": "相機已就緒，請將 QR Code 靠近並置中",
+    "processing": "正在辨識交易單…",
+    "uploadBtn": "從相簿選照片",
+    "uploadHint": "如果現場掃描沒有反應，可改用拍照或從相簿上傳收據 QR Code。",
+    "uploadFailed": "照片中無法辨識 QR Code，請拍清楚一點或改用手動輸入",
     "back": "返回"
   },
   "manual": {
