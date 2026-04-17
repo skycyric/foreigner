@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      coupon_allocation_rules: {
+        Row: {
+          coupon_prefix: string
+          created_at: string
+          id: string
+          is_active: boolean
+          note: string | null
+          quantity_per_participant: number
+          rule_name: string
+        }
+        Insert: {
+          coupon_prefix: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          note?: string | null
+          quantity_per_participant?: number
+          rule_name: string
+        }
+        Update: {
+          coupon_prefix?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          note?: string | null
+          quantity_per_participant?: number
+          rule_name?: string
+        }
+        Relationships: []
+      }
       coupons: {
         Row: {
           assigned_at: string | null

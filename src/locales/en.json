@@ -27,7 +27,7 @@
     "scanBtn": "Scan Receipt QR Code",
     "manualBtn": "Enter Receipt Number",
     "viewWinners": "View Winners",
-    "changeEmail": "Change Email"
+    "changeEmail": "Re-enter Email"
   },
   "scan": {
     "title": "Scan Receipt QR Code",

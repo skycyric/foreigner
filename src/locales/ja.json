@@ -27,7 +27,7 @@
     "scanBtn": "レシートQRをスキャン",
     "manualBtn": "レシート番号を入力",
     "viewWinners": "当選者を見る",
-    "changeEmail": "メールを変更"
+    "changeEmail": "メールを再入力"
   },
   "scan": {
     "title": "レシートQRをスキャン",
