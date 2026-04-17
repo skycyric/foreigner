@@ -27,7 +27,7 @@
     "scanBtn": "영수증 QR 스캔",
     "manualBtn": "영수증 번호 입력",
     "viewWinners": "당첨자 보기",
-    "changeEmail": "이메일 변경"
+    "changeEmail": "이메일 다시 입력"
   },
   "scan": {
     "title": "영수증 QR 스캔",
