@@ -54,6 +54,7 @@ function ScanPage() {
   const [busy, setBusy] = useState(false);
   const [fileScanning, setFileScanning] = useState(false);
   const [scannerReady, setScannerReady] = useState(false);
+  const [needsTap, setNeedsTap] = useState(false);
 
   const setBusyState = useCallback((next: boolean) => {
     busyRef.current = next;
@@ -160,6 +161,38 @@ function ScanPage() {
     }
   }
 
+  function ensureVideoPlaysInline() {
+    const container = document.getElementById(containerId);
+    const video = container?.querySelector("video");
+    if (!video) return;
+    video.setAttribute("playsinline", "true");
+    video.setAttribute("webkit-playsinline", "true");
+    video.setAttribute("muted", "true");
+    video.muted = true;
+    video.autoplay = true;
+    const playPromise = video.play();
+    if (playPromise && typeof playPromise.catch === "function") {
+      playPromise.catch(() => {
+        // 自動播放失敗 → 需要使用者點一下才能恢復
+        setNeedsTap(true);
+      });
+    }
+  }
+
+  async function resumeVideoPlayback() {
+    setNeedsTap(false);
+    const container = document.getElementById(containerId);
+    const video = container?.querySelector("video");
+    if (!video) return;
+    try {
+      video.muted = true;
+      await video.play();
+    } catch (e) {
+      console.error("video resume failed", e);
+      setNeedsTap(true);
+    }
+  }
+
   useEffect(() => {
     const email = getStoredEmail();
     if (!email) {
@@ -221,6 +254,7 @@ function ScanPage() {
 
         startedRef.current = true;
         if (!cancelledRef.current) {
+          ensureVideoPlaysInline();
           setScannerReady(true);
         }
       } catch (err) {
@@ -234,9 +268,17 @@ function ScanPage() {
     restartScannerRef.current = startScanner;
     void startScanner();
 
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible" && startedRef.current) {
+        void resumeVideoPlayback();
+      }
+    }
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
     return () => {
       cancelledRef.current = true;
       restartScannerRef.current = null;
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       void stopScanner(true).finally(() => {
         if (scannerRef.current === scanner) {
           scannerRef.current = null;
@@ -259,11 +301,12 @@ function ScanPage() {
 
       <div
         id={containerId}
+        onClick={needsTap ? () => void resumeVideoPlayback() : undefined}
         className="mt-4 overflow-hidden rounded-xl border-2 border-primary bg-black"
       />
 
       <div className="mt-3 rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
-        {statusMessage}
+        {needsTap ? t("scan.tapToResume") : statusMessage}
       </div>
 
       {error && (
