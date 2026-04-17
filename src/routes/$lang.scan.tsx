@@ -36,6 +36,7 @@ function ScanPage() {
     }
 
     let cancelled = false;
+    let started = false;
     const scanner = new Html5Qrcode(containerId);
     scannerRef.current = scanner;
 
@@ -61,7 +62,7 @@ function ScanPage() {
           raw_payload: decodedText,
           source: "qr",
         });
-        await scanner.stop().catch(() => {});
+        if (started) await scanner.stop().catch(() => {});
         navigate({ to: "/$lang/result", params: { lang }, search: { tn } });
       } catch (e) {
         console.error(e);
@@ -77,15 +78,22 @@ function ScanPage() {
         handleDecoded,
         () => {},
       )
+      .then(() => {
+        started = true;
+      })
       .catch((err) => {
-        console.error(err);
+        console.error("camera start failed", err);
         setError(t("scan.permissionDenied"));
       });
 
     return () => {
       cancelled = true;
-      scanner.stop().catch(() => {});
-      scanner.clear();
+      // 只有 start 成功才 stop，否則會拋 "Cannot stop, scanner is not running or paused"
+      if (started) {
+        scanner.stop().then(() => scanner.clear()).catch(() => {});
+      } else {
+        try { scanner.clear(); } catch { /* ignore */ }
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang]);
