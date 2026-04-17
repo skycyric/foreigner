@@ -31,13 +31,8 @@
   },
   "scan": {
     "title": "掃描交易單 QR Code",
-    "hint": "點下方按鈕開啟相機，將 QR Code 對準框內",
-    "startBtn": "📷 開啟相機掃描",
-    "stopBtn": "停止掃描",
-    "uploadBtn": "🖼️ 從相簿選照片",
-    "scanning": "掃描中…",
-    "permissionDenied": "無法取得相機權限，請改用手動輸入或上傳照片",
-    "decodeFailed": "無法從照片中讀取 QR Code，請改用手動輸入",
+    "hint": "請允許相機權限，將 QR Code 對準框內",
+    "permissionDenied": "無法取得相機權限，請改用手動輸入",
     "back": "返回"
   },
   "manual": {
