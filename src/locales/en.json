@@ -76,7 +76,22 @@
   },
   "terms": {
     "title": "Privacy Terms",
-    "body": "Your email is collected solely for this event's notifications and will be handled per applicable privacy laws."
+    "intro": "In accordance with the Personal Data Protection Act and related regulations, please read the following notice and consent items carefully before participating. By submitting personal data through this campaign website, you are deemed to have fully understood and agreed to the following items.",
+    "noticeHeading": "Notice Items",
+    "noticeIntro": "In accordance with the Personal Data Protection Act and related regulations, the following notice items are provided:",
+    "sections": [
+      { "title": "Data Collector", "body": "Ever Rich Duty Free Shop Co., Ltd." },
+      { "title": "Purpose of Collection", "body": "Consumer promotional campaign." },
+      { "title": "Categories of Personal Data", "body": "Identifying information (e.g. name, mobile number, and other items listed on the participation page and campaign rules)." },
+      { "title": "Online Lucky Draw", "body": "When a participant submits campaign data through this website, they are deemed to have consented to Ever Rich Duty Free Shop Co., Ltd. processing and using the submitted personal data within the scope necessary for this campaign." },
+      { "title": "Period of Data Use", "body": "Personal data provided by participants will be used from the campaign start date until 1 year after the campaign ends." },
+      { "title": "Winners", "body": "Personal data filled on winners' receipts will be used solely for prize delivery and personal income tax reporting. Per tax regulations, such data may be retained for up to 7 years and will then be destroyed and not used for any other purpose." },
+      { "title": "Parties and Methods of Use", "body": "Personnel necessary for executing this campaign at Ever Rich Duty Free Shop Co., Ltd. will use the data only as necessary for campaign operations." },
+      { "title": "Region of Use", "body": "This campaign is open to participants regardless of residency in Taiwan. Personal data collected will not be transferred outside Taiwan, Kinmen, Penghu, or Matsu." },
+      { "title": "Rights under Article 3 of the Personal Data Protection Act", "body": "After identity verification, participants may apply to Ever Rich Duty Free customer service to inquire, review, obtain copies; or supplement/correct, request to stop collection, processing, or use, or delete part or all of their personal data. By submitting required personal data to Ever Rich Duty Free Shop Co., Ltd. by any means, participants consent to its processing and use within the scope necessary for the campaign's specific purpose. Participants may choose whether to fill in personal data fields; if not provided, Ever Rich Duty Free Shop Co., Ltd. reserves the right to determine eligibility." },
+      { "title": "Provision of Personal Data", "body": "Participants agree to provide the personal data listed in the campaign rules to Ever Rich Duty Free Shop Co., Ltd. without charge or condition for reasonable processing and use within the participant's business scope." },
+      { "title": "Security Measures", "body": "Ever Rich Duty Free Shop Co., Ltd. will protect participants' personal data in accordance with relevant laws and established comprehensive measures." }
+    ]
   },
   "common": {
     "loading": "Loading…",
