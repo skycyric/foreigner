@@ -111,16 +111,32 @@ export const api = {
     // ⚠️ TEST MODE: 只有測試 TN（白名單／前綴）才會加上時間戳後綴讓它可重複輸入；
     // 真實券號永遠走 unique 檢查。上線前請參考 docs/PRODUCTION_CHECKLIST.md 移除。
     const tnToInsert = isTestTn(input.tn) ? `${input.tn}__t${Date.now()}` : input.tn;
-    const { data, error } = await supabase
-      .from("lottery_entries")
-      .insert({
-        tn_number: tnToInsert,
-        email: input.email,
-        raw_payload: input.raw_payload ?? null,
-        source: input.source,
-      })
-      .select("id")
-      .single();
+    const insertEntry = async () =>
+      supabase
+        .from("lottery_entries")
+        .insert({
+          tn_number: tnToInsert,
+          email: input.email,
+          raw_payload: input.raw_payload ?? null,
+          source: input.source,
+        })
+        .select("id")
+        .single();
+
+    let { data, error } = await insertEntry();
+
+    if ((error as { code?: string } | null)?.code === "23503") {
+      const { error: participantError } = await supabase
+        .from("participants")
+        .upsert({ email: input.email }, { onConflict: "email" });
+
+      if (!participantError) {
+        const retry = await insertEntry();
+        data = retry.data;
+        error = retry.error;
+      }
+    }
+
     if (error) {
       // Postgres unique violation → 此單號已被登錄過
       if ((error as { code?: string }).code === "23505") {
