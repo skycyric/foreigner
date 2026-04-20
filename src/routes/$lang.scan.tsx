@@ -49,12 +49,49 @@ function getCameraErrorMessage(error: unknown, t: (key: string) => string): stri
   return t("scan.startFailed");
 }
 
-/** Build ZXing reader with TRY_HARDER + QR-only — best for paper scans. */
+/** Build ZXing reader — QR-only + TRY_HARDER, throttle to ~5 fps for paper scans. */
 function createReader(): BrowserMultiFormatReader {
   const hints = new Map();
   hints.set(DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.QR_CODE]);
   hints.set(DecodeHintType.TRY_HARDER, true);
-  return new BrowserMultiFormatReader(hints);
+  const reader = new BrowserMultiFormatReader(hints);
+  // 200ms 間隔（~5fps）對紙本 QR 完全夠，CPU 大降
+  (reader as unknown as { timeBetweenScansMillis: number }).timeBetweenScansMillis = 200;
+  return reader;
+}
+
+/**
+ * 找出最適合掃 QR 的後鏡頭 deviceId。
+ * 重點：必須在拿到 camera 權限「之後」才呼叫，否則 device.label 會是空字串。
+ * iPhone 多鏡頭裝置會有 wide/ultra-wide/telephoto，要挑「Back Camera」（主鏡頭），
+ * 不要選 ultra-wide（最近對焦距離太遠，紙本 QR 會糊）或 telephoto。
+ */
+async function pickBackCameraDeviceId(): Promise<string | undefined> {
+  try {
+    const devices = await BrowserMultiFormatReader.listVideoInputDevices();
+    if (devices.length === 0) return undefined;
+
+    // 1) 優先：label 完全等於 "Back Camera"（iOS Safari 的主鏡頭）
+    const exact = devices.find((d) => /^back camera$/i.test(d.label));
+    if (exact) return exact.deviceId;
+
+    // 2) 其次：label 含 back/rear/環境/後 但「不含」ultra/wide/telephoto
+    const main = devices.find(
+      (d) =>
+        /back|rear|environment|後|后/i.test(d.label) &&
+        !/ultra|wide|telephoto|tele|超廣角|長焦|远摄/i.test(d.label),
+    );
+    if (main) return main.deviceId;
+
+    // 3) 再次：任何含 back/rear 的
+    const anyBack = devices.find((d) => /back|rear|environment|後|后/i.test(d.label));
+    if (anyBack) return anyBack.deviceId;
+
+    // 4) 最後 fallback：第一個（不要選最後一個 — 在 iPhone 上常常是 telephoto）
+    return devices[0]?.deviceId;
+  } catch {
+    return undefined;
+  }
 }
 
 function ScanPage() {
@@ -345,19 +382,39 @@ function ScanPage() {
       setScannerReady(false);
 
       try {
-        // 先 enumerate 找出 back camera；找不到就讓 ZXing 用 facingMode environment 預設
-        let deviceId: string | undefined;
+        // 第一步：先用 facingMode environment 拿到「相機權限」，
+        // 之後 enumerateDevices 才會回傳真正的 device.label，可挑主鏡頭。
+        // 這個 stream 只是引子，拿到 deviceId 後就會被 ZXing 自己接手換掉。
+        let primingStream: MediaStream | null = null;
         try {
-          const devices = await BrowserMultiFormatReader.listVideoInputDevices();
-          const back =
-            devices.find((d) => /back|rear|environment|world|後|后/i.test(d.label)) ??
-            devices[devices.length - 1];
-          deviceId = back?.deviceId;
-        } catch {
-          /* ignore — fallback to facingMode */
+          primingStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: "environment" } },
+            audio: false,
+          });
+        } catch (err) {
+          // 權限拒絕 / 沒相機 — 直接拋出讓外層處理
+          throw err;
+        } finally {
+          // priming 用完立刻關，避免和 ZXing 等下要開的 stream 搶 track
+          primingStream?.getTracks().forEach((tr) => {
+            try {
+              tr.stop();
+            } catch {
+              /* ignore */
+            }
+          });
         }
 
-        // 720p 比 1080p 解碼快很多（每幀像素少 2.25 倍），對 QR 碼足夠
+        if (cancelledRef.current) return;
+
+        // 第二步：拿到權限後再 enumerate，挑出真正的後置主鏡頭
+        const deviceId = await pickBackCameraDeviceId();
+
+        if (cancelledRef.current) return;
+
+        // 第三步：把 stream 生命週期完全交給 ZXing — 它會自己等 video ready
+        // 才開始解碼，避免「video 還沒 ready 就 decode 拿到黑畫面」的問題。
+        // 720p 比 1080p 解碼快 2.25x，對 QR 完全夠。
         const constraints: MediaStreamConstraints = {
           video: deviceId
             ? {
@@ -375,44 +432,36 @@ function ScanPage() {
           audio: false,
         };
 
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        video.setAttribute("playsinline", "true");
+        video.muted = true;
+
+        const controls = await reader.decodeFromConstraints(
+          constraints,
+          video,
+          (result, _err, c) => {
+            if (cancelledRef.current) {
+              c.stop();
+              return;
+            }
+            if (result) {
+              void processDecodedTextRef.current(result.getText());
+            }
+            // _err 多半是 NotFoundException（每幀沒掃到），忽略即可
+          },
+        );
+
         if (cancelledRef.current) {
-          stream.getTracks().forEach((t) => t.stop());
+          controls.stop();
           return;
         }
 
-        streamRef.current = stream;
-        video.srcObject = stream;
-        video.setAttribute("playsinline", "true");
-        video.setAttribute("webkit-playsinline", "true");
-        video.muted = true;
-        video.autoplay = true;
-
-        try {
-          await video.play();
-        } catch {
-          setNeedsTap(true);
-        }
-
-        // ZXing 持續從 <video> 元素抓 frame 解碼
-        const controls = await reader.decodeFromVideoElement(video, (result, err, c) => {
-          if (cancelledRef.current) {
-            c.stop();
-            return;
-          }
-          if (result) {
-            void processDecodedTextRef.current(result.getText());
-          }
-          // err 多半是 NotFoundException（每幀沒掃到），忽略即可
-        });
-
         controlsRef.current = controls;
+        // 把 ZXing 接管的 stream 同步到 streamRef，cleanup 才能保證關閉相機
+        streamRef.current = (video.srcObject as MediaStream | null) ?? null;
         startedRef.current = true;
 
-        if (!cancelledRef.current) {
-          void applyAdvancedTrackConstraints();
-          setScannerReady(true);
-        }
+        void applyAdvancedTrackConstraints();
+        setScannerReady(true);
       } catch (err) {
         console.error("camera start failed", err);
         if (!cancelledRef.current) {
