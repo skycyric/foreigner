@@ -445,7 +445,7 @@ function ScanPage() {
 
   return (
     <PageShell>
-      <h1 className="text-xl font-bold">{t("scan.title")}</h1>
+      <h1 className="text-xl font-semibold tracking-tight text-foreground">{t("scan.title")}</h1>
       <p className="mt-1 text-sm text-muted-foreground">{t("scan.hint")}</p>
 
       <div
@@ -456,7 +456,7 @@ function ScanPage() {
             void tapToFocus();
           }
         }}
-        className="relative mt-4 overflow-hidden rounded-xl border-2 border-primary bg-black cursor-pointer aspect-square"
+        className="relative mt-4 overflow-hidden rounded-xl border border-foreground bg-black cursor-pointer aspect-square"
       >
         <video
           ref={videoRef}

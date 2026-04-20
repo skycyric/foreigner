@@ -20,7 +20,7 @@ function TermsPage() {
 
   return (
     <PageShell>
-      <h1 className="text-xl font-bold text-primary">{t("terms.title")}</h1>
+      <h1 className="text-xl font-semibold tracking-tight text-foreground">{t("terms.title")}</h1>
 
       {updated && (
         <p className="mt-2 text-xs text-muted-foreground">{updated}</p>

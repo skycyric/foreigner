@@ -71,7 +71,7 @@ function WelcomePage() {
 
   return (
     <PageShell>
-      <h1 className="text-xl font-bold text-foreground">{t("welcome.title")}</h1>
+      <h1 className="text-xl font-semibold tracking-tight text-foreground">{t("welcome.title")}</h1>
       <p className="mt-1 text-sm text-muted-foreground">{t("welcome.hint")}</p>
 
       <div className="mt-6 space-y-4">
@@ -92,7 +92,7 @@ function WelcomePage() {
               placeholder="yourname"
               className="rounded-r-none text-base"
             />
-            <span className="flex items-center justify-center border border-l-0 border-input bg-muted px-3 text-base font-semibold text-primary">
+            <span className="flex items-center justify-center border border-l-0 border-input bg-muted px-3 text-base font-semibold text-foreground">
               @
             </span>
           </div>
@@ -144,9 +144,9 @@ function WelcomePage() {
           )}
         </div>
 
-        <div className="rounded-lg bg-muted px-3 py-2 text-sm">
+        <div className="rounded-lg border border-border bg-muted px-3 py-2 text-sm">
           <span className="text-muted-foreground">Email：</span>
-          <span className="font-mono font-semibold text-primary break-all">{email}</span>
+          <span className="font-mono font-semibold text-foreground break-all">{email}</span>
         </div>
 
         <label className="flex items-start gap-2 text-sm">
@@ -157,7 +157,7 @@ function WelcomePage() {
           />
           <span className="text-foreground">
             {t("welcome.agree")}{" "}
-            <Link to="/$lang/terms" params={{ lang }} className="text-primary underline">
+            <Link to="/$lang/terms" params={{ lang }} className="text-foreground underline underline-offset-2">
               {t("welcome.terms")}
             </Link>
           </span>

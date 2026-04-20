@@ -37,78 +37,66 @@
   --color-ring: var(--ring);
   --color-ring-offset-background: var(--background);
 
-  --color-festive-red: var(--festive-red);
-  --color-festive-yellow: var(--festive-yellow);
-  --color-festive-cream: var(--festive-cream);
-  --color-festive-deep: var(--festive-deep);
 }
 
 :root {
-  --radius: 0.875rem;
+  --radius: 0.75rem;
 
-  /* 米白底 */
-  --background: oklch(0.985 0.012 85);
-  --foreground: oklch(0.22 0.04 30);
+  /* 純白底 */
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.18 0 0);
 
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.22 0.04 30);
+  --card-foreground: oklch(0.18 0 0);
 
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.22 0.04 30);
+  --popover-foreground: oklch(0.18 0 0);
 
-  /* Primary = 中國紅 */
-  --primary: oklch(0.55 0.22 25);
-  --primary-foreground: oklch(0.99 0.01 90);
+  /* Primary = 黑 */
+  --primary: oklch(0.18 0 0);
+  --primary-foreground: oklch(1 0 0);
 
-  /* Secondary = 暖黃 */
-  --secondary: oklch(0.88 0.16 90);
-  --secondary-foreground: oklch(0.25 0.05 30);
+  /* Secondary = 淺灰 */
+  --secondary: oklch(0.96 0 0);
+  --secondary-foreground: oklch(0.18 0 0);
 
-  --muted: oklch(0.95 0.02 80);
-  --muted-foreground: oklch(0.45 0.04 30);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.48 0 0);
 
-  /* Accent = 金黃 */
-  --accent: oklch(0.82 0.18 85);
-  --accent-foreground: oklch(0.22 0.04 30);
+  /* Accent = 微灰，用於 hover */
+  --accent: oklch(0.95 0 0);
+  --accent-foreground: oklch(0.18 0 0);
 
-  --destructive: oklch(0.55 0.22 25);
-  --destructive-foreground: oklch(0.99 0.01 90);
+  --destructive: oklch(0.55 0.18 27);
+  --destructive-foreground: oklch(1 0 0);
 
-  --border: oklch(0.9 0.03 60);
-  --input: oklch(0.92 0.025 70);
-  --ring: oklch(0.55 0.22 25);
+  --border: oklch(0.92 0 0);
+  --input: oklch(0.92 0 0);
+  --ring: oklch(0.18 0 0);
 
-  /* 額外節慶 token */
-  --festive-red: oklch(0.55 0.22 25);
-  --festive-yellow: oklch(0.85 0.18 88);
-  --festive-cream: oklch(0.985 0.012 85);
-  --festive-deep: oklch(0.4 0.18 28);
-
-  --gradient-festive: linear-gradient(135deg, var(--festive-red), oklch(0.62 0.22 35));
-  --gradient-warm: linear-gradient(180deg, var(--festive-yellow), var(--festive-red));
-  --shadow-festive: 0 10px 30px -10px oklch(0.55 0.22 25 / 0.35);
+  --shadow-soft: 0 1px 2px 0 oklch(0 0 0 / 0.04), 0 1px 3px 0 oklch(0 0 0 / 0.06);
 }
 
 .dark {
-  --background: oklch(0.18 0.04 30);
-  --foreground: oklch(0.97 0.02 80);
-  --card: oklch(0.22 0.05 30);
-  --card-foreground: oklch(0.97 0.02 80);
-  --popover: oklch(0.22 0.05 30);
-  --popover-foreground: oklch(0.97 0.02 80);
-  --primary: oklch(0.7 0.2 30);
-  --primary-foreground: oklch(0.18 0.04 30);
-  --secondary: oklch(0.35 0.08 60);
-  --secondary-foreground: oklch(0.97 0.02 80);
-  --muted: oklch(0.28 0.04 30);
-  --muted-foreground: oklch(0.7 0.03 60);
-  --accent: oklch(0.6 0.18 80);
-  --accent-foreground: oklch(0.18 0.04 30);
-  --destructive: oklch(0.65 0.22 25);
-  --destructive-foreground: oklch(0.97 0.02 80);
+  --background: oklch(0.14 0 0);
+  --foreground: oklch(0.98 0 0);
+  --card: oklch(0.18 0 0);
+  --card-foreground: oklch(0.98 0 0);
+  --popover: oklch(0.18 0 0);
+  --popover-foreground: oklch(0.98 0 0);
+  --primary: oklch(0.98 0 0);
+  --primary-foreground: oklch(0.14 0 0);
+  --secondary: oklch(0.25 0 0);
+  --secondary-foreground: oklch(0.98 0 0);
+  --muted: oklch(0.22 0 0);
+  --muted-foreground: oklch(0.65 0 0);
+  --accent: oklch(0.25 0 0);
+  --accent-foreground: oklch(0.98 0 0);
+  --destructive: oklch(0.6 0.18 27);
+  --destructive-foreground: oklch(0.98 0 0);
   --border: oklch(1 0 0 / 12%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.7 0.2 30);
+  --ring: oklch(0.98 0 0);
 }
 
 @layer base {

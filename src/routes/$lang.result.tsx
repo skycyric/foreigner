@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
+import { Check } from "lucide-react";
 import { PageShell } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { getStoredEmail } from "@/lib/device";
@@ -32,24 +33,29 @@ function ResultPage() {
 
   return (
     <PageShell>
-      <div className="mt-6 text-center">
-        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-accent text-4xl">
-          ✓
+      <div className="mt-8 text-center">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-foreground">
+          <Check className="h-7 w-7 text-foreground" strokeWidth={1.75} />
         </div>
-        <h1 className="mt-4 text-2xl font-bold text-primary">{t("result.successTitle")}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{t("result.successMsg")}</p>
+        <h1 className="mt-5 text-2xl font-semibold tracking-tight text-foreground">
+          {t("result.successTitle")}
+        </h1>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+          {t("result.successMsg")}
+        </p>
 
         {tn && (
-          <div className="mx-auto mt-4 inline-block rounded-lg bg-muted px-4 py-2 font-mono text-sm">
-            {t("result.tnLabel")}：<span className="font-bold text-primary">{tn.split("__t")[0]}</span>
+          <div className="mx-auto mt-5 inline-block rounded-md border border-border bg-muted px-4 py-2 font-mono text-sm">
+            <span className="text-muted-foreground">{t("result.tnLabel")}：</span>
+            <span className="font-semibold text-foreground">{tn.split("__t")[0]}</span>
           </div>
         )}
       </div>
 
-      <div className="mt-8 space-y-2">
+      <div className="mt-10 space-y-2">
         <Button
           size="lg"
-          className="h-14 w-full font-semibold"
+          className="h-14 w-full font-medium"
           onClick={() => navigate({ to: "/$lang/coupons", params: { lang }, replace: true })}
         >
           {t("result.again")}
