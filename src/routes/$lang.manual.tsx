@@ -36,16 +36,11 @@ function ManualPage() {
     }
     setLoading(true);
     try {
-      const lookup = await api.lookupTransaction({ tn });
-      if (!lookup.found) {
-        toast.error(t("manual.notFound"));
-        return;
-      }
-      if (lookup.alreadyUsed) {
+      const result = await api.submitLotteryEntry({ tn, email, source: "manual" });
+      if (result.alreadyUsed) {
         toast.error(t("manual.alreadyUsed"));
         return;
       }
-      await api.submitLotteryEntry({ tn, email, source: "manual" });
       navigate({ to: "/$lang/result", params: { lang }, search: { tn } });
     } catch (e) {
       console.error(e);

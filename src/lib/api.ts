@@ -24,10 +24,7 @@ export interface Winner {
 }
 
 export interface LookupResult {
-  found: boolean;
   alreadyUsed: boolean;
-  amount?: number;
-  date?: string;
 }
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL as string | undefined;
@@ -77,29 +74,17 @@ export const api = {
     return (data ?? []) as Coupon[];
   },
 
-  /** Lookup transaction in valid_transactions and check if already used in lottery_entries. */
+  /** Check if this TN has already been registered (unique per system). */
   async lookupTransaction(input: { tn: string }): Promise<LookupResult> {
     if (USE_REMOTE_API) {
       return remote(`/lottery/lookup?tn=${encodeURIComponent(input.tn)}`);
     }
-    const [{ data: txn }, { data: entry }] = await Promise.all([
-      supabase
-        .from("valid_transactions")
-        .select("amount, txn_date")
-        .eq("tn_number", input.tn)
-        .maybeSingle(),
-      supabase
-        .from("lottery_entries")
-        .select("id")
-        .eq("tn_number", input.tn)
-        .maybeSingle(),
-    ]);
-    return {
-      found: !!txn,
-      alreadyUsed: !!entry,
-      amount: txn?.amount ? Number(txn.amount) : undefined,
-      date: txn?.txn_date ?? undefined,
-    };
+    const { data: entry } = await supabase
+      .from("lottery_entries")
+      .select("id")
+      .eq("tn_number", input.tn)
+      .maybeSingle();
+    return { alreadyUsed: !!entry };
   },
 
   async submitLotteryEntry(input: {
@@ -107,7 +92,7 @@ export const api = {
     email: string;
     raw_payload?: string;
     source: "manual" | "qr";
-  }): Promise<{ id: string }> {
+  }): Promise<{ id: string; alreadyUsed?: boolean }> {
     if (USE_REMOTE_API) {
       return remote("/lottery/submit", { method: "POST", body: JSON.stringify(input) });
     }
@@ -121,7 +106,13 @@ export const api = {
       })
       .select("id")
       .single();
-    if (error) throw error;
+    if (error) {
+      // Postgres unique violation → 此單號已被登錄過
+      if ((error as { code?: string }).code === "23505") {
+        return { id: "", alreadyUsed: true };
+      }
+      throw error;
+    }
     return { id: data.id };
   },
 

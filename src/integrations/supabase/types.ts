@@ -138,30 +138,6 @@ export type Database = {
         }
         Relationships: []
       }
-      valid_transactions: {
-        Row: {
-          amount: number | null
-          created_at: string
-          store_code: string | null
-          tn_number: string
-          txn_date: string | null
-        }
-        Insert: {
-          amount?: number | null
-          created_at?: string
-          store_code?: string | null
-          tn_number: string
-          txn_date?: string | null
-        }
-        Update: {
-          amount?: number | null
-          created_at?: string
-          store_code?: string | null
-          tn_number?: string
-          txn_date?: string | null
-        }
-        Relationships: []
-      }
       winners: {
         Row: {
           announced_at: string
