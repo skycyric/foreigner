@@ -47,28 +47,16 @@ function getCameraErrorMessage(error: unknown, t: (key: string) => string): stri
   return t("scan.startFailed");
 }
 
-/**
- * 從可用鏡頭中挑出最適合掃紙本 QR 的後鏡頭。
- * iPhone 通常會列出 "Back Camera"、"Back Ultra Wide Camera"、"Back Telephoto Camera"
- * → 必須挑「主鏡頭」(Back Camera)，超廣角無法近距離對焦，望遠視角太窄。
- */
-function pickBackCameraDeviceId(devices: MediaDeviceInfo[]): string | undefined {
-  if (devices.length === 0) return undefined;
-
-  const back = devices.filter((d) => /back|rear|environment|後|后/i.test(d.label));
-  const candidates = back.length > 0 ? back : devices;
-
-  // 排除超廣角 / 望遠 / 微距 / 三鏡頭組合
-  const excluded = candidates.filter(
-    (d) => !/ultra|wide|tele|macro|truedepth|front|triple|dual/i.test(d.label),
-  );
-  const pool = excluded.length > 0 ? excluded : candidates;
-
-  // 優先挑 "Back Camera" 完全匹配
-  const exact = pool.find((d) => /^back camera$/i.test(d.label.trim()));
-  if (exact) return exact.deviceId;
-
-  return pool[0]?.deviceId;
+function buildScannerConstraints(): MediaStreamConstraints {
+  return {
+    audio: false,
+    video: {
+      facingMode: { ideal: "environment" },
+      width: { ideal: 1920 },
+      height: { ideal: 1080 },
+      aspectRatio: { ideal: 1 },
+    },
+  };
 }
 
 function ScanPage() {
@@ -385,8 +373,8 @@ function ScanPage() {
     hints.set(DecodeHintType.TRY_HARDER, true);
 
     const reader = new BrowserMultiFormatReader(hints, {
-      delayBetweenScanAttempts: 150,
-      delayBetweenScanSuccess: 1000,
+      delayBetweenScanAttempts: 80,
+      delayBetweenScanSuccess: 600,
     });
     readerRef.current = reader;
 
@@ -397,30 +385,18 @@ function ScanPage() {
       setScannerReady(false);
 
       try {
-        // Step 1: 先用 getUserMedia 觸發授權，確保 enumerateDevices 能拿到 label
-        const primingStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: "environment" } },
-          audio: false,
-        });
-        // 立即釋放 priming stream，讓 ZXing 用挑好的 deviceId 重開
-        primingStream.getTracks().forEach((t) => t.stop());
-
-        if (cancelledRef.current) return;
-
-        // Step 2: 列出所有相機，挑出真正的後主鏡頭
-        const devices = await BrowserMultiFormatReader.listVideoInputDevices();
-        const deviceId = pickBackCameraDeviceId(devices);
-
         const video = videoRef.current;
         if (!video) return;
         // iOS Safari 必備：playsinline 才能在頁內播放
         video.setAttribute("playsinline", "true");
         video.setAttribute("webkit-playsinline", "true");
         video.muted = true;
+        setNeedsTap(false);
+        setZoomSupported(false);
+        setTorchSupported(false);
 
-        // Step 3: 用挑好的 deviceId 啟動掃描
-        const controls = await reader.decodeFromVideoDevice(
-          deviceId,
+        const controls = await reader.decodeFromConstraints(
+          buildScannerConstraints(),
           video,
           (result, _err, ctrl) => {
             if (cancelledRef.current) {
