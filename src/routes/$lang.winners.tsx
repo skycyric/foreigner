@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
+import { Trophy } from "lucide-react";
 import { PageShell } from "@/components/Header";
 import { api, type Winner } from "@/lib/api";
 import {
@@ -27,7 +28,10 @@ function WinnersPage() {
 
   return (
     <PageShell>
-      <h1 className="text-xl font-bold text-primary">🏆 {t("winners.title")}</h1>
+      <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight text-foreground">
+        <Trophy className="h-5 w-5" strokeWidth={1.75} />
+        {t("winners.title")}
+      </h1>
 
       {winners === null && (
         <div className="mt-4 rounded-lg bg-muted p-4 text-center text-sm">
@@ -52,7 +56,7 @@ function WinnersPage() {
             <TableBody>
               {winners.map((w) => (
                 <TableRow key={w.id}>
-                  <TableCell className="font-semibold text-primary">
+                  <TableCell className="font-semibold text-foreground">
                     {w.rank}
                     {w.is_backup && (
                       <span className="ml-1 rounded bg-muted px-1 text-[10px] text-muted-foreground">

@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useEffect } from "react";
+import { ArrowRight, Sparkles } from "lucide-react";
 import { PageShell } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { getStoredEmail } from "@/lib/device";
@@ -30,19 +31,23 @@ function HomePage() {
 
   return (
     <PageShell>
-      <div className="space-y-8">
-        <div
-          className="rounded-2xl p-8 text-center text-primary-foreground shadow-[var(--shadow-festive)]"
-          style={{ background: "var(--gradient-festive)" }}
-        >
-          <div className="mb-4 text-5xl">🎉</div>
-          <h1 className="text-2xl font-bold leading-tight">{t("home.title")}</h1>
-          <p className="mt-3 text-sm opacity-90">{t("home.subtitle")}</p>
+      <div className="space-y-10">
+        <div className="rounded-2xl border border-border bg-card p-8 text-center">
+          <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-full border border-border">
+            <Sparkles className="h-5 w-5 text-foreground" strokeWidth={1.5} />
+          </div>
+          <h1 className="text-2xl font-semibold leading-tight tracking-tight text-foreground">
+            {t("home.title")}
+          </h1>
+          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+            {t("home.subtitle")}
+          </p>
         </div>
 
-        <Button asChild size="lg" className="h-14 w-full text-base font-semibold">
+        <Button asChild size="lg" className="h-14 w-full text-base font-medium">
           <Link to="/$lang/welcome" params={{ lang }}>
-            {t("home.cta")} →
+            {t("home.cta")}
+            <ArrowRight className="ml-1 h-4 w-4" strokeWidth={1.75} />
           </Link>
         </Button>
 

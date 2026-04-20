@@ -1,6 +1,6 @@
 import { Link, useNavigate, useParams, useLocation } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Gift } from "lucide-react";
 import { isSupportedLang, SUPPORTED_LANGS, storeLang, type Lang } from "@/lib/i18n";
 
 /**
@@ -51,9 +51,10 @@ export function Header() {
           <Link
             to="/$lang"
             params={{ lang }}
-            className="text-lg font-bold text-primary tracking-tight"
+            className="flex items-center gap-1.5 text-base font-semibold text-foreground tracking-tight"
           >
-            🎁 {t("brand")}
+            <Gift className="h-4 w-4" strokeWidth={1.75} />
+            <span>{t("brand")}</span>
           </Link>
         </div>
         <select

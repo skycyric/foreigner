@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate, useParams, Link } from "@tanstack/react-r
 import { useTranslation } from "react-i18next";
 import { useEffect, useRef, useState } from "react";
 import JsBarcode from "jsbarcode";
+import { ScanLine, Keyboard, Trophy, Ticket } from "lucide-react";
 import { PageShell } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { api, type Coupon } from "@/lib/api";
@@ -76,40 +77,45 @@ function CouponsPage() {
       <p className="mt-1 break-all text-xs text-muted-foreground">{email}</p>
 
       {/* 抽獎入口 */}
-      <div className="mt-4 rounded-2xl border-2 border-accent bg-accent/10 p-4">
-        <div className="mb-3 flex items-center gap-2">
-          <span className="text-2xl">🎰</span>
-          <p className="text-sm font-medium text-foreground">{t("coupons.lotteryHint")}</p>
-        </div>
+      <div className="mt-5 rounded-2xl border border-border bg-card p-5">
+        <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
+          {t("coupons.lotteryHint")}
+        </p>
         <div className="space-y-2">
-          <Button asChild className="h-12 w-full font-semibold">
-            <Link to="/$lang/scan" params={{ lang }}>📷 {t("coupons.scanBtn")}</Link>
+          <Button asChild className="h-12 w-full font-medium">
+            <Link to="/$lang/scan" params={{ lang }}>
+              <ScanLine className="h-4 w-4" strokeWidth={1.75} />
+              {t("coupons.scanBtn")}
+            </Link>
           </Button>
-          <Button asChild variant="secondary" className="h-12 w-full font-semibold">
-            <Link to="/$lang/manual" params={{ lang }}>⌨️ {t("coupons.manualBtn")}</Link>
+          <Button asChild variant="outline" className="h-12 w-full font-medium">
+            <Link to="/$lang/manual" params={{ lang }}>
+              <Keyboard className="h-4 w-4" strokeWidth={1.75} />
+              {t("coupons.manualBtn")}
+            </Link>
           </Button>
         </div>
       </div>
 
-      <div className="mt-6 space-y-3">
+      <div className="mt-8 space-y-3">
         {coupons === null && (
-          <div className="rounded-lg bg-muted p-4 text-center text-sm">{t("common.loading")}</div>
+          <div className="rounded-lg bg-muted p-4 text-center text-sm text-muted-foreground">
+            {t("common.loading")}
+          </div>
         )}
         {coupons && coupons.length === 0 && (
-          <div className="rounded-lg border border-dashed border-border bg-card p-6 text-center text-sm text-muted-foreground">
+          <div className="rounded-lg border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">
             {t("coupons.empty")}
           </div>
         )}
         {coupons?.map((c) => (
           <div
             key={c.coupon_code}
-            className="overflow-hidden rounded-xl border-2 border-primary/20 bg-card shadow-sm"
+            className="overflow-hidden rounded-xl border border-border bg-card"
           >
-            <div
-              className="px-4 py-2 text-sm font-semibold text-primary-foreground"
-              style={{ background: "var(--gradient-festive)" }}
-            >
-              {c.note ?? "Discount Coupon"}
+            <div className="flex items-center gap-2 border-b border-border bg-muted/40 px-4 py-2.5 text-sm font-medium text-foreground">
+              <Ticket className="h-4 w-4" strokeWidth={1.75} />
+              <span>{c.note ?? "Discount Coupon"}</span>
             </div>
             <div className="bg-white px-2 py-3">
               <Barcode value={c.coupon_code} />
@@ -118,13 +124,14 @@ function CouponsPage() {
         ))}
       </div>
 
-      <div className="mt-6 text-center">
+      <div className="mt-8 text-center">
         <Link
           to="/$lang/winners"
           params={{ lang }}
-          className="text-sm text-primary underline-offset-2 hover:underline"
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
         >
-          🏆 {t("coupons.viewWinners")}
+          <Trophy className="h-3.5 w-3.5" strokeWidth={1.75} />
+          {t("coupons.viewWinners")}
         </Link>
       </div>
     </PageShell>
