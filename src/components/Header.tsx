@@ -52,12 +52,10 @@ export function Header() {
             const next = e.target.value;
             if (!isSupportedLang(next)) return;
             storeLang(next as Lang);
-            // Preserve current sub-route when switching language
-            const nextPath = cleanedSub
-              ? `/${next}/${cleanedSub}`
-              : `/${next}`;
+            // Preserve current sub-route when switching language.
+            const nextHref = cleanedSub ? `/${next}/${cleanedSub}` : `/${next}`;
             const search = location.searchStr || "";
-            navigate({ to: nextPath + search, replace: true });
+            router.navigate({ href: nextHref + search, replace: true });
           }}
           className="h-8 rounded-md border border-input bg-background px-2 text-xs"
         >
