@@ -41,7 +41,7 @@ function ManualPage() {
         toast.error(t("manual.alreadyUsed"));
         return;
       }
-      navigate({ to: "/$lang/result", params: { lang }, search: { tn } });
+      navigate({ to: "/$lang/result", params: { lang }, search: { tn }, replace: true });
     } catch (e) {
       console.error(e);
       toast.error(String(e));
@@ -119,7 +119,7 @@ function ManualPage() {
         <Button
           variant="ghost"
           className="w-full"
-          onClick={() => navigate({ to: "/$lang/coupons", params: { lang } })}
+          onClick={() => navigate({ to: "/$lang/coupons", params: { lang }, replace: true })}
         >
           {t("common.back")}
         </Button>

@@ -1,14 +1,27 @@
-import { Link, useNavigate, useParams, useRouter, useLocation } from "@tanstack/react-router";
+import { Link, useNavigate, useParams, useLocation } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { ChevronLeft } from "lucide-react";
 import { isSupportedLang, SUPPORTED_LANGS, storeLang, type Lang } from "@/lib/i18n";
+
+/**
+ * 顯式上一頁路徑表 — 避免 history.back() 在 push/replace 混用時跳回 result 等中間頁。
+ * key 是當前 sub-path（去掉語言前綴），value 是要去的 sub-path（"" = 首頁）。
+ */
+const BACK_MAP: Record<string, string> = {
+  scan: "coupons",
+  manual: "coupons",
+  coupons: "",
+  winners: "",
+  about: "",
+  terms: "",
+  result: "",
+};
 
 export function Header() {
   const { t } = useTranslation();
   const params = useParams({ strict: false }) as { lang?: string };
   const lang = isSupportedLang(params.lang) ? params.lang : "zh";
   const navigate = useNavigate();
-  const router = useRouter();
   const location = useLocation();
 
   const subPath = location.pathname.replace(/^\/[a-z]{2}(?=\/|$)/, "");
@@ -16,11 +29,9 @@ export function Header() {
   const hideBack = cleanedSub === "" || cleanedSub === "welcome" || cleanedSub === "result";
 
   function handleBack() {
-    if (typeof window !== "undefined" && window.history.length > 1) {
-      router.history.back();
-    } else {
-      navigate({ to: "/$lang", params: { lang } });
-    }
+    const target = BACK_MAP[cleanedSub] ?? "";
+    const href = target ? `/${lang}/${target}` : `/${lang}`;
+    navigate({ href, replace: true });
   }
 
   return (
@@ -52,10 +63,9 @@ export function Header() {
             const next = e.target.value;
             if (!isSupportedLang(next)) return;
             storeLang(next as Lang);
-            // Preserve current sub-route when switching language.
             const nextHref = cleanedSub ? `/${next}/${cleanedSub}` : `/${next}`;
             const search = location.searchStr || "";
-            router.navigate({ href: nextHref + search, replace: true });
+            navigate({ href: nextHref + search, replace: true });
           }}
           className="h-8 rounded-md border border-input bg-background px-2 text-xs"
         >
