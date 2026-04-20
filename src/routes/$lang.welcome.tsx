@@ -36,8 +36,33 @@ function WelcomePage() {
   }, [lang, navigate]);
 
   const isCustom = domain === "__custom__";
-  const finalDomain = isCustom ? customDomain.trim() : domain;
-  const email = `${account.trim()}@${finalDomain}`;
+  const finalDomain = isCustom ? customDomain.trim().toLowerCase() : domain;
+  const email = `${account.trim().toLowerCase()}@${finalDomain}`;
+
+  /**
+   * 處理 account 欄位變更：
+   * - 若使用者貼上 / autofill 完整 email（含 @），自動拆成 account + domain
+   * - domain 若在預設清單 → 選對應 chip；否則切 custom 並填入
+   * - 一般輸入時只過濾掉 @
+   */
+  function handleAccountChange(value: string) {
+    const trimmed = value.trim();
+    const atIdx = trimmed.indexOf("@");
+    if (atIdx > 0 && atIdx < trimmed.length - 1) {
+      const acc = trimmed.slice(0, atIdx);
+      const dom = trimmed.slice(atIdx + 1).toLowerCase();
+      setAccount(acc);
+      if (DOMAINS.includes(dom)) {
+        setDomain(dom);
+        setCustomDomain("");
+      } else {
+        setDomain("__custom__");
+        setCustomDomain(dom);
+      }
+      return;
+    }
+    setAccount(trimmed.replace(/@/g, ""));
+  }
 
   async function submit() {
     if (!account.trim() || !/^[a-zA-Z0-9._+-]+$/.test(account.trim())) {
@@ -88,7 +113,7 @@ function WelcomePage() {
               autoCorrect="off"
               spellCheck={false}
               value={account}
-              onChange={(e) => setAccount(e.target.value.replace(/@/g, ""))}
+              onChange={(e) => handleAccountChange(e.target.value)}
               placeholder="yourname"
               className="rounded-r-none text-base"
             />
@@ -137,7 +162,9 @@ function WelcomePage() {
               autoCorrect="off"
               spellCheck={false}
               value={customDomain}
-              onChange={(e) => setCustomDomain(e.target.value.replace(/@/g, ""))}
+              onChange={(e) =>
+                setCustomDomain(e.target.value.trim().replace(/^@+/, "").toLowerCase())
+              }
               placeholder="example.com"
               className="mt-2 text-base"
             />
