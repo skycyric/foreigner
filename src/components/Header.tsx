@@ -1,7 +1,7 @@
 import { Link, useNavigate, useParams, useRouter, useLocation } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { ChevronLeft } from "lucide-react";
-import { isSupportedLang, SUPPORTED_LANGS, storeLang } from "@/lib/i18n";
+import { isSupportedLang, SUPPORTED_LANGS, storeLang, type Lang } from "@/lib/i18n";
 
 export function Header() {
   const { t } = useTranslation();
@@ -11,8 +11,9 @@ export function Header() {
   const router = useRouter();
   const location = useLocation();
 
-  const subPath = location.pathname.replace(/^\/[a-z]{2}\/?/, "");
-  const hideBack = subPath === "" || subPath === "welcome" || subPath === "result";
+  const subPath = location.pathname.replace(/^\/[a-z]{2}(?=\/|$)/, "");
+  const cleanedSub = subPath.replace(/^\//, "").replace(/\/$/, "");
+  const hideBack = cleanedSub === "" || cleanedSub === "welcome" || cleanedSub === "result";
 
   function handleBack() {
     if (typeof window !== "undefined" && window.history.length > 1) {
@@ -50,8 +51,13 @@ export function Header() {
           onChange={(e) => {
             const next = e.target.value;
             if (!isSupportedLang(next)) return;
-            storeLang(next);
-            navigate({ to: "/$lang", params: { lang: next } });
+            storeLang(next as Lang);
+            // Preserve current sub-route when switching language
+            const nextPath = cleanedSub
+              ? `/${next}/${cleanedSub}`
+              : `/${next}`;
+            const search = location.searchStr || "";
+            navigate({ to: nextPath + search, replace: true });
           }}
           className="h-8 rounded-md border border-input bg-background px-2 text-xs"
         >
