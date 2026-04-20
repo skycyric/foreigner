@@ -1,41 +1,34 @@
 
-## 移除白名單機制
+## Android 紙本 QR 掃描優化
 
-把 `valid_transactions` 白名單比對拿掉，改成只擋「同一張單號重複登錄」。
+針對 Android 紙本 QR 掃不到，從「拉近、放大、強化對焦」三個方向改善。重點是 iPhone 已正常，所以只動 Android 相關參數而不破壞現有 iPhone 流程。
 
 ### 變更內容
 
-**1. 資料庫 (migration)**
-- `DROP TABLE public.valid_transactions`（含其 RLS policy，會一併消失）
-- 在 `lottery_entries.tn_number` 加 `UNIQUE` 索引，從 DB 層保證一張單號全站只能登錄一次（避免 race condition）
+**1. 加入 zoom / torch 控制 (`src/routes/$lang.scan.tsx`)**
+- 啟動後讀取 video track 的 `getCapabilities()`，若支援 `zoom` 就加一個「放大鏡」按鈕（1x / 2x 切換），讓使用者把模糊小 QR 拉近
+- 若支援 `torch`（手電筒），加一個閃光燈切換按鈕，解決紙本反光/低光問題
 
-**2. API 層 (`src/lib/api.ts`)**
-- 移除 `lookupTransaction` 對 `valid_transactions` 的查詢，只查 `lottery_entries`
-- 回傳簡化為 `{ alreadyUsed: boolean }`，移除 `found / amount / date`
-- `submitLotteryEntry` 改用 try/catch 捕捉 unique 衝突 (Postgres `23505`)，轉成「已使用」訊息
+**2. 加強對焦策略 (`src/routes/$lang.scan.tsx`)**
+- 點擊畫面時，先強制 `single-shot` 對焦，再切回 `continuous`（目前已有 single-shot 但沒切回，導致只對焦一次後就鎖死）
+- 啟動時若 `focusDistance` capability 存在，主動設成近距離（紙本通常 10–20cm）
 
-**3. 掃描頁 (`src/routes/$lang.scan.tsx`)**
-- 移除「查無此單」分支，只保留「已使用」與「成功」兩種結果
-- 任何能解出 TN 格式的 QR 都視為有效，直接寫入 `lottery_entries`
+**3. 提示文字 (`src/locales/{zh,en,ja,ko}.json`)**
+- 新增三條 key：
+  - `scan.zoom`：「放大」/「Zoom」
+  - `scan.torch`：「閃光燈」/「Torch」
+  - `scan.paperHint`：「紙本掃描技巧：距離 10–20cm，避免反光，可開啟閃光燈或放大」
 
-**4. 手動輸入頁 (`src/routes/$lang.manual.tsx`)**
-- 同上，拿掉「查無此單」分支
-- 仍保留前端格式驗證（2 英文字母 + 數字）
+**4. UI 排版 (`src/routes/$lang.scan.tsx`)**
+- 在掃描框下方加一行小工具列：放大 / 閃光燈（只在裝置支援時顯示）
+- 在現有 `tapToFocus` 提示下方多一行 `paperHint`
 
-**5. 多語系 (`src/locales/{zh,en,ja,ko}.json`)**
-- 移除 `manual.notFound` 訊息（或保留 key 但不再使用，建議直接移除以保持乾淨）
-- `manual.alreadyUsed` 維持
+### 不動的部分
+- 既有的 `applyAdvancedTrackConstraints`（continuous focus / exposure / white balance）保留
+- 解析度 / fps / qrbox 大小不變（上次已優化過）
+- 上傳照片掃描流程不變（已是紙本 fallback）
+- iPhone 行為不受影響（zoom / torch 在 iOS Safari 多半 capability 為 undefined，按鈕自然不顯示）
 
-**6. 結果頁 (`src/routes/$lang.result.tsx`)**
-- 確認沒有依賴 `amount / txn_date` 的顯示；若有，改為僅顯示登錄成功 + TN
-
-### 不變的部分
-- 註冊 (participants)、優惠券派發 trigger、抽獎名單 (winners)、cookie 自動登入流程都不動
-- TN 仍用 `extractTn()` 取 `^` 前段並轉大寫
-
-### 確認
-- `valid_transactions` 目前只有 5 筆測試資料，刪表不會影響正式資料
-- `coupon_allocation_rules` / `coupons` / `participants` / `winners` 完全不受影響
-
-### 風險與後續
-- 拿掉白名單後，任何看似合法的 TN 字串都能登錄，僅靠「同單號只能一次」防重複。若日後想再加防濫用，可改為「同 email 每日上限 N 筆」或「需收據照片人工審核」，但這次不做。
+### 風險
+- `zoom` / `torch` capabilities 在不同 Android 機型支援度不一，做了 capability 偵測所以不支援的裝置不會顯示按鈕，不會壞畫面
+- 若使用者開啟閃光燈忘了關，離開頁面時 `stopScanner` 會把 track stop 掉，閃光燈自動熄滅
