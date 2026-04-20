@@ -43,10 +43,9 @@
     "uploadFailed": "The QR code could not be read from the photo. Please try a clearer image or enter it manually.",
     "tapToResume": "The browser paused the camera. Tap the preview to resume.",
     "tapToFocus": "Tip: keep good lighting, hold 20–30 cm away, and tap the preview to refocus if blurry.",
-    "paperHint": "Paper tip: hold 10–20 cm away, avoid glare, turn on the torch or zoom in.",
-    "zoom": "Zoom",
-    "torch": "Torch",
+    "paperHint": "Paper tip: hold 10–20 cm away, avoid glare, ensure good lighting.",
     "invalidFormat": "Invalid QR code format — this does not look like a receipt number.",
+    "rescanTitle": "Please scan again",
     "rescan": "Scan again",
     "back": "Back"
   },

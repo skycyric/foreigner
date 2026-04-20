@@ -5,6 +5,15 @@ import { BrowserMultiFormatReader, IScannerControls } from "@zxing/browser";
 import { BarcodeFormat, DecodeHintType } from "@zxing/library";
 import { PageShell } from "@/components/Header";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { api, isValidTnFormat } from "@/lib/api";
 import { getStoredEmail } from "@/lib/device";
 import { toast } from "sonner";
@@ -69,11 +78,6 @@ function ScanPage() {
   const [fileScanning, setFileScanning] = useState(false);
   const [scannerReady, setScannerReady] = useState(false);
   const [needsTap, setNeedsTap] = useState(false);
-  const [zoomSupported, setZoomSupported] = useState(false);
-  const [zoomMax, setZoomMax] = useState(1);
-  const [zoomLevel, setZoomLevel] = useState(1);
-  const [torchSupported, setTorchSupported] = useState(false);
-  const [torchOn, setTorchOn] = useState(false);
 
   const setBusyState = useCallback((next: boolean) => {
     busyRef.current = next;
@@ -90,8 +94,6 @@ function ScanPage() {
       controlsRef.current = null;
     }
     startedRef.current = false;
-    setTorchOn(false);
-    setZoomLevel(1);
   }, []);
 
   const processDecodedText = useCallback(
@@ -245,54 +247,6 @@ function ScanPage() {
       } catch (e) {
         console.warn("applyConstraints failed", e);
       }
-    }
-
-    const zoomCap = caps.zoom as { min?: number; max?: number; step?: number } | undefined;
-    if (zoomCap && typeof zoomCap.max === "number" && zoomCap.max > 1) {
-      setZoomSupported(true);
-      setZoomMax(zoomCap.max);
-      setZoomLevel(1);
-    } else {
-      setZoomSupported(false);
-    }
-    if ((caps as { torch?: boolean }).torch) {
-      setTorchSupported(true);
-      setTorchOn(false);
-    } else {
-      setTorchSupported(false);
-    }
-  }
-
-  async function applyZoom(next: number) {
-    const track = getActiveVideoTrack();
-    if (!track) return;
-    try {
-      await track.applyConstraints({
-        advanced: [{ zoom: next }],
-      } as unknown as MediaTrackConstraints);
-      setZoomLevel(next);
-    } catch (e) {
-      console.warn("zoom failed", e);
-    }
-  }
-
-  async function toggleZoom() {
-    if (!zoomSupported) return;
-    const target = zoomLevel === 1 ? Math.min(2, zoomMax) : zoomLevel < zoomMax ? zoomMax : 1;
-    await applyZoom(target);
-  }
-
-  async function toggleTorch() {
-    const track = getActiveVideoTrack();
-    if (!track) return;
-    const next = !torchOn;
-    try {
-      await track.applyConstraints({
-        advanced: [{ torch: next }],
-      } as unknown as MediaTrackConstraints);
-      setTorchOn(next);
-    } catch (e) {
-      console.warn("torch toggle failed", e);
     }
   }
 
@@ -523,33 +477,6 @@ function ScanPage() {
         {needsTap ? t("scan.tapToResume") : statusMessage}
       </div>
 
-      {(zoomSupported || torchSupported) && scannerReady && !needsTap && (
-        <div className="mt-2 flex flex-wrap gap-2">
-          {zoomSupported && (
-            <Button
-              type="button"
-              variant={zoomLevel > 1 ? "default" : "outline"}
-              size="sm"
-              onClick={() => void toggleZoom()}
-              disabled={working}
-            >
-              {t("scan.zoom")} {zoomLevel.toFixed(zoomLevel % 1 === 0 ? 0 : 1)}x
-            </Button>
-          )}
-          {torchSupported && (
-            <Button
-              type="button"
-              variant={torchOn ? "default" : "outline"}
-              size="sm"
-              onClick={() => void toggleTorch()}
-              disabled={working}
-            >
-              {t("scan.torch")}{torchOn ? " ✓" : ""}
-            </Button>
-          )}
-        </div>
-      )}
-
       {scannerReady && !needsTap && !working && (
         <>
           <p className="mt-2 text-xs text-muted-foreground">{t("scan.tapToFocus")}</p>
@@ -557,20 +484,19 @@ function ScanPage() {
         </>
       )}
 
-      {blockingError && (
-        <div className="mt-4 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
-          <p>{blockingError}</p>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="mt-2"
-            onClick={() => void handleRescan()}
-          >
-            {t("scan.rescan")}
-          </Button>
-        </div>
-      )}
+      <AlertDialog open={!!blockingError}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("scan.rescanTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{blockingError}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => void handleRescan()}>
+              {t("scan.rescan")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {error && !blockingError && (
         <div className="mt-4 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
