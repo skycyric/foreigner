@@ -78,6 +78,9 @@ function ScanPage() {
       startedRef.current = false;
     }
 
+    setTorchOn(false);
+    setZoomLevel(1);
+
     if (clear) {
       try {
         scanner.clear();
