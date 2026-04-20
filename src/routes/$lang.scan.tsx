@@ -452,6 +452,8 @@ function ScanPage() {
                   if (cancelledRef.current) return;
                   if (results.length > 0 && results[0].rawValue) {
                     void processDecodedTextRef.current(results[0].rawValue);
+                  } else {
+                    releaseLatchedTnIfLost();
                   }
                 })
                 .catch(() => {
@@ -550,6 +552,8 @@ function ScanPage() {
             }
             if (result) {
               void processDecodedTextRef.current(result.getText());
+            } else {
+              releaseLatchedTnIfLost();
             }
           });
           controlsRef.current = controls;
@@ -569,6 +573,8 @@ function ScanPage() {
     }
 
     restartScannerRef.current = startScanner;
+    latchedTnRef.current = null;
+    lastDetectedAtRef.current = 0;
     void startScanner();
 
     function handleVisibilityChange() {
