@@ -88,7 +88,6 @@ if (!i18n.isInitialized) {
     supportedLngs: SUPPORTED_LANGS as unknown as string[],
     interpolation: { escapeValue: false },
     // 關閉自動 detect — 我們用 URL 的 $lang 決定
-    initImmediate: true,
   });
 }
 
