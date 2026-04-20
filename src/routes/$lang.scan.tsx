@@ -260,11 +260,11 @@ function ScanPage() {
       if (focusModes.includes("single-shot")) {
         await track.applyConstraints({
           advanced: [{ focusMode: "single-shot" }],
-        } as MediaTrackConstraints);
+        } as unknown as MediaTrackConstraints);
       } else if (focusModes.includes("manual")) {
         await track.applyConstraints({
           advanced: [{ focusMode: "manual" }, { focusMode: "continuous" }],
-        } as MediaTrackConstraints);
+        } as unknown as MediaTrackConstraints);
       }
     } catch (e) {
       console.warn("tap-to-focus failed", e);
