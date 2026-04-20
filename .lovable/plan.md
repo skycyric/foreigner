@@ -1,72 +1,41 @@
 
+## 移除白名單機制
 
-確認三個關鍵決定後，鎖定最終架構：
+把 `valid_transactions` 白名單比對拿掉，改成只擋「同一張單號重複登錄」。
 
-## 確認結論
-1. **後端**：Lovable Cloud 當 API（前端靜態檔丟到貴司主機呼叫 Lovable Cloud endpoint），但所有 API 呼叫集中在 `src/lib/api.ts` 一個檔案，並透過 `VITE_API_BASE_URL` 環境變數切換 → 之後要換成貴司自家後端，只要改檔案 + 重新 build 即可。
-2. **路由**：採用參考站可接受的模式 → **History 路由**（`/welcome`、`/coupons`…），由貴司主機設 SPA fallback（rewrite 全部到 `index.html`）；同時 Vite `base: './'` 確保資源路徑相對。
-3. **部署位置**：`https://events.everrich-group.com/<活動子目錄>/`，子目錄底下會有不同語系。
+### 變更內容
 
-## 語系架構（重點調整）
-依「子目錄裡面會有不同語系的 html 檔」這句話：
-- 採用 **單一 SPA + URL 語系前綴**：`/zh/`、`/en/`、`/ja/`、`/ko/`
-- 路由結構：`/$lang/welcome`、`/$lang/coupons`…，根目錄 `/` 自動依 `navigator.language` 重導到對應語系
-- 每個語系頁面有獨立 URL 可分享（符合「不同語系的 html」精神，雖然實際是 SPA 動態渲染）
-- 每個語系獨立 `<head>` meta（title / description / og:locale），對 SEO 與社群分享友善
+**1. 資料庫 (migration)**
+- `DROP TABLE public.valid_transactions`（含其 RLS policy，會一併消失）
+- 在 `lottery_entries.tn_number` 加 `UNIQUE` 索引，從 DB 層保證一張單號全站只能登錄一次（避免 race condition）
 
-## 最終技術棧
-- TanStack Start（History 路由、`base: './'`、SPA build）
-- Lovable Cloud（5 張表 + RLS + server functions 對外暴露為 API）
-- `react-i18next`（zh / en / ja / ko 四份 JSON）
-- `jsbarcode`（Code128）+ `html5-qrcode`（相機掃 QR）
-- shadcn/ui + Tailwind（紅×黃節慶配色）
+**2. API 層 (`src/lib/api.ts`)**
+- 移除 `lookupTransaction` 對 `valid_transactions` 的查詢，只查 `lottery_entries`
+- 回傳簡化為 `{ alreadyUsed: boolean }`，移除 `found / amount / date`
+- `submitLotteryEntry` 改用 try/catch 捕捉 unique 衝突 (Postgres `23505`)，轉成「已使用」訊息
 
-## 路由清單
-```
-/                          → 自動偵測語系 redirect 到 /zh|en|ja|ko/
-/$lang/                    → 首頁（主視覺 + 立即登錄 CTA）
-/$lang/welcome             → Email 輸入（拆帳號 + 網域 chip + 條款勾選）
-/$lang/coupons             → 我的 Code128 折扣券 + 抽獎入口
-/$lang/scan                → 相機掃交易單 QR
-/$lang/manual              → 手動輸入 [AA]-[數字]
-/$lang/result              → 登記結果
-/$lang/about               → 活動辦法
-/$lang/terms               → 個資條款
-/$lang/winners             → 中獎名單（email 遮罩 + 候補順位）
-```
+**3. 掃描頁 (`src/routes/$lang.scan.tsx`)**
+- 移除「查無此單」分支，只保留「已使用」與「成功」兩種結果
+- 任何能解出 TN 格式的 QR 都視為有效，直接寫入 `lottery_entries`
 
-## API 抽象層（核心關鍵）
-`src/lib/api.ts` 統一管理所有後端呼叫，介面如下：
-```ts
-api.getOrCreateParticipant({ email, device_id, language })
-api.getMyCoupons({ email })
-api.lookupTransaction({ tn })
-api.submitLotteryEntry({ tn, raw_payload, source, email })
-api.getWinners()
-```
-- 預設 implementation 走 Lovable Cloud server functions
-- 留 `VITE_USE_MOCK=true` 開關可切到純前端 mock，方便離線測試
-- 之後換貴司 API 時只要改 `api.ts` 內每個方法的 `fetch` URL 與 payload mapping
+**4. 手動輸入頁 (`src/routes/$lang.manual.tsx`)**
+- 同上，拿掉「查無此單」分支
+- 仍保留前端格式驗證（2 英文字母 + 數字）
 
-## 資料模型（Lovable Cloud）
-- `participants`：email PK / device_id / language / created_at
-- `coupons`：coupon_code unique / email / assigned_at
-- `lottery_entries`：tn_number unique / email / raw_payload / source / created_at
-- `valid_transactions`（mock）：tn_number / amount / date
-- `winners`：prize_name / masked_email / rank / is_backup
+**5. 多語系 (`src/locales/{zh,en,ja,ko}.json`)**
+- 移除 `manual.notFound` 訊息（或保留 key 但不再使用，建議直接移除以保持乾淨）
+- `manual.alreadyUsed` 維持
 
-## 部署交付物
-- `dist/` 資料夾（含 `index.html` + 相對路徑資源）
-- `README.md`：放置子目錄、設定主機 SPA fallback、設定 API base URL 三步驟
-- 後台 CSV 匯入頁（管理用，第一版可用 Lovable Cloud Studio 直接編輯資料表代替）
+**6. 結果頁 (`src/routes/$lang.result.tsx`)**
+- 確認沒有依賴 `amount / txn_date` 的顯示；若有，改為僅顯示登錄成功 + TN
 
-## 實作順序
-1. 設計 token（紅／黃／米白）+ Vite `base: './'` 設定
-2. 路由骨架（`$lang` 動態 segment + 自動 redirect）
-3. i18n 四語檔骨架 + 語言切換器
-4. 啟用 Lovable Cloud + 5 張表 + server functions
-5. `src/lib/api.ts` 抽象層
-6. 核心頁：welcome / coupons / scan / manual / result
-7. 內容頁：about / terms / winners
-8. 種 mock 資料 + 行動裝置 QA
+### 不變的部分
+- 註冊 (participants)、優惠券派發 trigger、抽獎名單 (winners)、cookie 自動登入流程都不動
+- TN 仍用 `extractTn()` 取 `^` 前段並轉大寫
 
+### 確認
+- `valid_transactions` 目前只有 5 筆測試資料，刪表不會影響正式資料
+- `coupon_allocation_rules` / `coupons` / `participants` / `winners` 完全不受影響
+
+### 風險與後續
+- 拿掉白名單後，任何看似合法的 TN 字串都能登錄，僅靠「同單號只能一次」防重複。若日後想再加防濫用，可改為「同 email 每日上限 N 筆」或「需收據照片人工審核」，但這次不做。
