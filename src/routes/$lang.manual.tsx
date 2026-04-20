@@ -104,7 +104,7 @@ function ManualPage() {
         </div>
 
         <div className="rounded-lg bg-muted px-3 py-2 text-center font-mono text-sm">
-          T/N：<span className="font-bold text-primary">{letters || "—"}{digits || "—"}</span>
+          T/N：<span className="font-bold text-primary">{letters || digits ? `${letters}${digits}` : "—"}</span>
         </div>
 
         <Button
