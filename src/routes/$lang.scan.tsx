@@ -94,8 +94,6 @@ function ScanPage() {
       controlsRef.current = null;
     }
     startedRef.current = false;
-    setTorchOn(false);
-    setZoomLevel(1);
   }, []);
 
   const processDecodedText = useCallback(
