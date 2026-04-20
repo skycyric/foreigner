@@ -206,6 +206,71 @@ function ScanPage() {
     }
   }
 
+  /**
+   * Apply advanced video constraints (continuous focus, exposure, higher
+   * resolution) after the stream starts. Many Android devices ignore these
+   * inside the initial getUserMedia constraints but accept them via
+   * applyConstraints on the live track.
+   */
+  async function applyAdvancedTrackConstraints() {
+    const container = document.getElementById(containerId);
+    const video = container?.querySelector("video") as HTMLVideoElement | null;
+    const stream = video?.srcObject as MediaStream | null;
+    const track = stream?.getVideoTracks?.()[0];
+    if (!track) return;
+
+    const caps = (track.getCapabilities?.() ?? {}) as Record<string, unknown>;
+    const advanced: Record<string, unknown>[] = [];
+
+    const focusModes = (caps.focusMode as string[] | undefined) ?? [];
+    if (focusModes.includes("continuous")) {
+      advanced.push({ focusMode: "continuous" });
+    } else if (focusModes.includes("auto")) {
+      advanced.push({ focusMode: "auto" });
+    }
+
+    const exposureModes = (caps.exposureMode as string[] | undefined) ?? [];
+    if (exposureModes.includes("continuous")) {
+      advanced.push({ exposureMode: "continuous" });
+    }
+
+    const whiteBalanceModes = (caps.whiteBalanceMode as string[] | undefined) ?? [];
+    if (whiteBalanceModes.includes("continuous")) {
+      advanced.push({ whiteBalanceMode: "continuous" });
+    }
+
+    if (advanced.length === 0) return;
+    try {
+      await track.applyConstraints({ advanced } as unknown as MediaTrackConstraints);
+    } catch (e) {
+      console.warn("applyConstraints failed", e);
+    }
+  }
+
+  /** Tap-to-focus: trigger a one-shot focus on tap (Android). */
+  async function tapToFocus() {
+    const container = document.getElementById(containerId);
+    const video = container?.querySelector("video") as HTMLVideoElement | null;
+    const stream = video?.srcObject as MediaStream | null;
+    const track = stream?.getVideoTracks?.()[0];
+    if (!track) return;
+    const caps = (track.getCapabilities?.() ?? {}) as Record<string, unknown>;
+    const focusModes = (caps.focusMode as string[] | undefined) ?? [];
+    try {
+      if (focusModes.includes("single-shot")) {
+        await track.applyConstraints({
+          advanced: [{ focusMode: "single-shot" }],
+        } as unknown as MediaTrackConstraints);
+      } else if (focusModes.includes("manual")) {
+        await track.applyConstraints({
+          advanced: [{ focusMode: "manual" }, { focusMode: "continuous" }],
+        } as unknown as MediaTrackConstraints);
+      }
+    } catch (e) {
+      console.warn("tap-to-focus failed", e);
+    }
+  }
+
   async function resumeVideoPlayback() {
     setNeedsTap(false);
     const container = document.getElementById(containerId);
@@ -219,6 +284,7 @@ function ScanPage() {
       setNeedsTap(true);
     }
   }
+
 
   useEffect(() => {
     const email = getStoredEmail();
@@ -255,13 +321,15 @@ function ScanPage() {
         await scanner.start(
           preferredCamera?.id ?? { facingMode: { ideal: "environment" } },
           {
-            fps: 10,
+            // 提高 fps：Android 上每秒解碼次數越多，掃到模糊/低解析 QR 的機率越高
+            fps: 15,
             // 不要強制 aspectRatio：Android 上會讓 stream 不符 constraint 造成黑畫面
             // 不要 disableFlip：Android sensor 旋轉常與顯示不一致，需嘗試兩個方向
             qrbox: (viewfinderWidth, viewfinderHeight) => {
               const w = Math.max(1, viewfinderWidth);
               const h = Math.max(1, viewfinderHeight);
-              const edge = Math.max(180, Math.floor(Math.min(w, h) * 0.7));
+              // 加大掃描框（80%），讓 QR Code 更容易落在解碼區
+              const edge = Math.max(220, Math.floor(Math.min(w, h) * 0.8));
               return {
                 width: Math.min(edge, w),
                 height: Math.min(edge, h),
@@ -269,8 +337,10 @@ function ScanPage() {
             },
             videoConstraints: {
               facingMode: { ideal: "environment" },
-              width: { ideal: 1280 },
-              height: { ideal: 720 },
+              // 拉高解析度：Android 預設常給 640x480，QR 模糊就解不出來
+              width: { ideal: 1920, min: 1280 },
+              height: { ideal: 1080, min: 720 },
+              frameRate: { ideal: 30, min: 15 },
             },
           },
           (decodedText) => {
@@ -282,6 +352,8 @@ function ScanPage() {
         startedRef.current = true;
         if (!cancelledRef.current) {
           ensureVideoPlaysInline();
+          // 套用 continuous focus / exposure / white balance（Android 必備）
+          void applyAdvancedTrackConstraints();
           setScannerReady(true);
         }
       } catch (err) {
@@ -328,13 +400,23 @@ function ScanPage() {
 
       <div
         id={containerId}
-        onClick={needsTap ? () => void resumeVideoPlayback() : undefined}
-        className="mt-4 overflow-hidden rounded-xl border-2 border-primary bg-black"
+        onClick={() => {
+          if (needsTap) {
+            void resumeVideoPlayback();
+          } else if (scannerReady) {
+            void tapToFocus();
+          }
+        }}
+        className="mt-4 overflow-hidden rounded-xl border-2 border-primary bg-black cursor-pointer"
       />
 
       <div className="mt-3 rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
         {needsTap ? t("scan.tapToResume") : statusMessage}
       </div>
+
+      {scannerReady && !needsTap && !working && (
+        <p className="mt-2 text-xs text-muted-foreground">{t("scan.tapToFocus")}</p>
+      )}
 
       {blockingError && (
         <div className="mt-4 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
