@@ -75,35 +75,8 @@ function CouponsPage() {
       </div>
       <p className="mt-1 break-all text-xs text-muted-foreground">{email}</p>
 
-      <div className="mt-4 space-y-3">
-        {coupons === null && (
-          <div className="rounded-lg bg-muted p-4 text-center text-sm">{t("common.loading")}</div>
-        )}
-        {coupons && coupons.length === 0 && (
-          <div className="rounded-lg border border-dashed border-border bg-card p-6 text-center text-sm text-muted-foreground">
-            {t("coupons.empty")}
-          </div>
-        )}
-        {coupons?.map((c) => (
-          <div
-            key={c.coupon_code}
-            className="overflow-hidden rounded-xl border-2 border-primary/20 bg-card shadow-sm"
-          >
-            <div
-              className="px-4 py-2 text-sm font-semibold text-primary-foreground"
-              style={{ background: "var(--gradient-festive)" }}
-            >
-              {c.note ?? "Discount Coupon"}
-            </div>
-            <div className="bg-white px-2 py-3">
-              <Barcode value={c.coupon_code} />
-            </div>
-          </div>
-        ))}
-      </div>
-
       {/* 抽獎入口 */}
-      <div className="mt-8 rounded-2xl border-2 border-accent bg-accent/10 p-4">
+      <div className="mt-4 rounded-2xl border-2 border-accent bg-accent/10 p-4">
         <div className="mb-3 flex items-center gap-2">
           <span className="text-2xl">🎰</span>
           <p className="text-sm font-medium text-foreground">{t("coupons.lotteryHint")}</p>
@@ -116,6 +89,11 @@ function CouponsPage() {
             <Link to="/$lang/manual" params={{ lang }}>⌨️ {t("coupons.manualBtn")}</Link>
           </Button>
         </div>
+      </div>
+
+      <div className="mt-6 space-y-3">
+...
+        ))}
       </div>
 
       <div className="mt-6 text-center">
