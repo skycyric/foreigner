@@ -7,6 +7,30 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 
+/**
+ * TN（交易單號）格式設定 — 集中管理。
+ * 未來要改長度 / 字母數 / 加破折號，只動這裡，scan / manual / API 都會跟著變。
+ *
+ * 範例：
+ *   - 改 11 碼數字：digits: 11, pattern: /^[A-Z]{2}\d{11}$/
+ *   - 改 3 碼英文：letters: 3, pattern: /^[A-Z]{3}\d{10}$/
+ *   - 完全放寬：pattern: /^.+$/
+ */
+export const TN_FORMAT = {
+  letters: 2,
+  digits: 10,
+  pattern: /^[A-Z]{2}\d{10}$/,
+};
+
+export const isValidTnFormat = (tn: string): boolean => TN_FORMAT.pattern.test(tn);
+
+export class InvalidTnError extends Error {
+  constructor() {
+    super("INVALID_TN_FORMAT");
+    this.name = "InvalidTnError";
+  }
+}
+
 export interface Coupon {
   coupon_code: string;
   email: string | null;
@@ -93,6 +117,9 @@ export const api = {
     raw_payload?: string;
     source: "manual" | "qr";
   }): Promise<{ id: string; alreadyUsed?: boolean }> {
+    if (!isValidTnFormat(input.tn)) {
+      throw new InvalidTnError();
+    }
     if (USE_REMOTE_API) {
       return remote("/lottery/submit", { method: "POST", body: JSON.stringify(input) });
     }

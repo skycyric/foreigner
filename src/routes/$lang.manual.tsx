@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { PageShell } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { api } from "@/lib/api";
+import { api, isValidTnFormat, TN_FORMAT } from "@/lib/api";
 import { getStoredEmail } from "@/lib/device";
 import { toast } from "sonner";
 
@@ -25,7 +25,7 @@ function ManualPage() {
   async function submit() {
     const lettersUp = letters.toUpperCase();
     const tn = `${lettersUp}${digits}`;
-    if (!/^[A-Z]{2}$/.test(lettersUp) || !/^\d+$/.test(digits)) {
+    if (!isValidTnFormat(tn)) {
       toast.error(t("manual.invalidFormat"));
       return;
     }
@@ -67,14 +67,17 @@ function ManualPage() {
               autoCapitalize="characters"
               autoCorrect="off"
               spellCheck={false}
-              maxLength={2}
+              maxLength={TN_FORMAT.letters}
               value={letters}
               onChange={(e) => {
-                const v = e.target.value.replace(/[^a-zA-Z]/g, "").toUpperCase().slice(0, 2);
+                const v = e.target.value
+                  .replace(/[^a-zA-Z]/g, "")
+                  .toUpperCase()
+                  .slice(0, TN_FORMAT.letters);
                 setLetters(v);
-                if (v.length === 2) digitsRef.current?.focus();
+                if (v.length === TN_FORMAT.letters) digitsRef.current?.focus();
               }}
-              placeholder="YA"
+              placeholder={"A".repeat(TN_FORMAT.letters)}
               className="h-14 text-center text-2xl font-bold tracking-widest font-mono uppercase"
             />
           </div>
@@ -89,9 +92,12 @@ function ManualPage() {
               inputMode="numeric"
               pattern="[0-9]*"
               autoComplete="off"
+              maxLength={TN_FORMAT.digits}
               value={digits}
-              onChange={(e) => setDigits(e.target.value.replace(/\D/g, ""))}
-              placeholder="2101223580"
+              onChange={(e) =>
+                setDigits(e.target.value.replace(/\D/g, "").slice(0, TN_FORMAT.digits))
+              }
+              placeholder={"0".repeat(TN_FORMAT.digits)}
               className="h-14 text-center text-2xl font-bold tracking-wider font-mono"
             />
           </div>

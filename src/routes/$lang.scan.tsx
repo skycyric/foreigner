@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import { PageShell } from "@/components/Header";
 import { Button } from "@/components/ui/button";
-import { api } from "@/lib/api";
+import { api, isValidTnFormat } from "@/lib/api";
 import { getStoredEmail } from "@/lib/device";
 import { toast } from "sonner";
 
@@ -98,6 +98,14 @@ function ScanPage() {
       // 防止同一張單在這次掃描期間被反覆觸發
       if (processedTnsRef.current.has(tn)) return;
       processedTnsRef.current.add(tn);
+
+      // 基本格式驗證：擋掉網址 / 任意字串 / 條碼等不像交易單的內容
+      if (!isValidTnFormat(tn)) {
+        toast.error(t("scan.invalidFormat"));
+        // 允許使用者把同一個錯誤 QR 移開後重掃 → 短暫後移除黑名單
+        setTimeout(() => processedTnsRef.current.delete(tn), 1500);
+        return;
+      }
 
       let navigatingAway = false;
       setBusyState(true);
