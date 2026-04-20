@@ -1,7 +1,9 @@
 import { createFileRoute, useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
+import { useEffect, useState } from "react";
 import { PageShell } from "@/components/Header";
 import { Button } from "@/components/ui/button";
+import { getStoredEmail } from "@/lib/device";
 
 export const Route = createFileRoute("/$lang/result")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -16,6 +18,17 @@ function ResultPage() {
   const { lang } = useParams({ from: "/$lang/result" });
   const { tn } = useSearch({ from: "/$lang/result" });
   const navigate = useNavigate();
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    if (!getStoredEmail()) {
+      navigate({ to: "/$lang/welcome", params: { lang }, replace: true });
+      return;
+    }
+    setReady(true);
+  }, [lang, navigate]);
+
+  if (!ready) return null;
 
   return (
     <PageShell>
