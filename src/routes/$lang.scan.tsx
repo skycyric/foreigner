@@ -103,10 +103,10 @@ function ScanPage() {
   const busyRef = useRef(false);
   const cancelledRef = useRef(false);
   const blockedRef = useRef(false);
-  // tn → cooldown expiresAt (ms epoch). 期限內不會重複處理同一個 TN，
-  // 避免 native loop 200ms 命中後同筆 QR 反覆觸發 → busy 閃爍。
-  const tnCooldownRef = useRef<Map<string, number>>(new Map());
-  const TN_COOLDOWN_MS = 1500;
+  // 視野內單次鎖定：同一張 QR 只要還在鏡頭前，就只處理一次。
+  const latchedTnRef = useRef<string | null>(null);
+  const lastDetectedAtRef = useRef(0);
+  const SCAN_LOST_RESET_MS = 800;
   const restartScannerRef = useRef<null | (() => Promise<void>)>(null);
   const processDecodedTextRef = useRef<(text: string) => Promise<void>>(async () => {});
   // Native BarcodeDetector loop refs
