@@ -15,26 +15,39 @@ interface TermsSection {
 function TermsPage() {
   const { t } = useTranslation();
   const sections = (t("terms.sections", { returnObjects: true }) ?? []) as TermsSection[];
+  const intro = (t("terms.intro") ?? "") as string;
+  const updated = (t("terms.updated", { defaultValue: "" }) ?? "") as string;
 
   return (
     <PageShell>
       <h1 className="text-xl font-bold text-primary">{t("terms.title")}</h1>
 
-      <p className="mt-4 text-sm leading-7 text-foreground">{t("terms.intro")}</p>
+      {updated && (
+        <p className="mt-2 text-xs text-muted-foreground">{updated}</p>
+      )}
 
-      <h2 className="mt-6 text-base font-semibold text-foreground">
-        {t("terms.noticeHeading")}
-      </h2>
-      <p className="mt-2 text-sm leading-7 text-muted-foreground">
-        {t("terms.noticeIntro")}
-      </p>
+      {intro
+        .split("\n")
+        .filter((line) => line.trim().length > 0)
+        .map((line, idx) => (
+          <p key={idx} className="mt-3 text-sm leading-7 text-foreground">
+            {line}
+          </p>
+        ))}
 
-      <ol className="mt-4 list-decimal space-y-4 pl-5 text-sm leading-7 text-foreground">
+      <ol className="mt-6 list-decimal space-y-4 pl-5 text-sm leading-7 text-foreground">
         {Array.isArray(sections) &&
           sections.map((section, idx) => (
             <li key={idx}>
               <p className="font-semibold">{section.title}</p>
-              <p className="mt-1 text-muted-foreground">{section.body}</p>
+              {section.body
+                .split("\n")
+                .filter((line) => line.trim().length > 0)
+                .map((line, lineIdx) => (
+                  <p key={lineIdx} className="mt-1 text-muted-foreground">
+                    {line}
+                  </p>
+                ))}
             </li>
           ))}
       </ol>
