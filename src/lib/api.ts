@@ -6,6 +6,7 @@
  * 元件層不需要修改。
  */
 import { supabase } from "@/integrations/supabase/client";
+import { IS_TEST_MODE } from "./test-mode";
 
 /**
  * TN（交易單號）格式設定 — 集中管理。
@@ -107,10 +108,13 @@ export const api = {
     if (USE_REMOTE_API) {
       return remote("/lottery/submit", { method: "POST", body: JSON.stringify(input) });
     }
+    // ⚠️ TEST MODE: dev 環境會在 TN 後加上時間戳，讓同一張紙可重複掃測試。
+    // 上線前請參考 docs/PRODUCTION_CHECKLIST.md 移除。
+    const tnToInsert = IS_TEST_MODE ? `${input.tn}__t${Date.now()}` : input.tn;
     const { data, error } = await supabase
       .from("lottery_entries")
       .insert({
-        tn_number: input.tn,
+        tn_number: tnToInsert,
         email: input.email,
         raw_payload: input.raw_payload ?? null,
         source: input.source,
