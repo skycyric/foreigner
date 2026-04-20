@@ -1,48 +1,76 @@
 
-使用者在 Cloud view 的 participants 表想刪除幾筆資料，但 UI 產生的 SQL 用了 `id` 欄位 — 而我們的 `participants` 表主鍵是 `email`，根本沒有 `id` 欄位（schema 確認：只有 email / device_id / language / created_at / updated_at）。
+對，正確方向。S24 那段問題的本質是「JS-only 的 ZXing 在新 Android 高解析感測器上效能不夠」，所以最乾淨的解法就是**依瀏覽器能力分流**到不同解碼器，而不是無止境調 ZXing 參數。
 
-這不是程式 bug，是 Lovable Cloud 內建表格 UI 預設用 `id` 當識別欄，但我們刻意用 `email` 當主鍵（避免 auth.users FK 限制）。所以那個刪除按鈕對 participants 表不適用。
+## 三層解碼策略（依機型自動分流）
 
-## 解法選項
-
-**選項 A — 手動 SQL 刪除（建議，最快）**
-直接在 Cloud → SQL Editor 執行：
-```sql
-DELETE FROM participants WHERE email IN ('test1@example.com', 'test2@example.com');
+```text
+┌─────────────────────────────────────────────────┐
+│ 啟動掃描器                                      │
+└──────────────┬──────────────────────────────────┘
+               │
+        偵測 'BarcodeDetector' in window
+               │
+       ┌───────┴────────┐
+       │ 有             │ 沒有
+       ▼                ▼
+┌──────────────┐   ┌──────────────────┐
+│ Tier 1       │   │ Tier 2           │
+│ 原生         │   │ ZXing fallback   │
+│ BarcodeDet.  │   │ (現有路徑)       │
+│              │   │                  │
+│ S24 / 新     │   │ iOS Safari /     │
+│ Android      │   │ 舊 Android       │
+│ Chrome       │   │                  │
+└──────────────┘   └──────────────────┘
+       │                  │
+       └────────┬─────────┘
+                ▼
+        共用 ROI 中央裁切
+        共用 processDecodedText
 ```
-或用條件批次清測試資料：
-```sql
-DELETE FROM participants WHERE email LIKE '%test%';
-```
-注意 coupons / lottery_entries 有 FK 指向 participants.email，需要先清子表，或者改用 CASCADE：
-```sql
-DELETE FROM lottery_entries WHERE email = 'xxx@example.com';
-DELETE FROM coupons WHERE email = 'xxx@example.com';
-DELETE FROM participants WHERE email = 'xxx@example.com';
-```
 
-**選項 B — 加一個 id 欄位讓 UI 能用**
-新增 `id uuid default gen_random_uuid()` 欄位（保留 email 為 unique）。代價：
-- 要寫一支 migration
-- 程式碼還是用 email 做關聯，新欄位純粹只為了讓 Cloud UI 的刪除鈕能動
-- 多一欄沒實質用途的資料
+## 實際改動（只動 `src/routes/$lang.scan.tsx`）
 
-**選項 C — 都不動，未來都用 SQL Editor 處理 participants**
-告知此 UI 限制，之後刪 participants 都走 SQL。
+**Tier 1 — 原生 BarcodeDetector**（S24、Pixel、新 Android Chrome）
+- 啟動時 `'BarcodeDetector' in window` 探測
+- `new BarcodeDetector({ formats: ['qr_code'] })`
+- `requestAnimationFrame` loop 每幀（節流 200ms）跑 `detector.detect(video)`
+- 硬體加速、毫秒級命中
 
-## 我的建議
+**Tier 2 — @zxing/browser fallback**（iOS Safari、舊瀏覽器）
+- 原生 API 不存在 → 走現有 `reader.decodeFromVideoElement(...)` 路徑
+- 不動現有邏輯，已驗證可用
 
-走 **選項 A**：用 SQL 刪除，因為：
-1. 一次性需求，不值得改 schema
-2. 加 id 欄位純粹為了遷就 UI，會讓 schema 變複雜
-3. 你之後正式上線清測試資料時，本來就建議用 SQL（更精準、可附條件）
+**共用優化（兩條路徑都套）**
+- constraint 升到 `width 1920 ideal / 1280 min`、`height 1080 ideal / 720 min`
+- 解碼前裁中央 60% ROI（offscreen canvas）→ 餵給對應 detector / reader
+- 命中後共用 `processDecodedTextRef.current(...)`
 
-如果你常常要刪測試資料，我可以幫你在後台加一個簡單的 admin 頁面，這比改 schema 更乾淨。
+**stop / cleanup**
+- 新增 `nativeLoopRef`（rAF id），cleanup 時 `cancelAnimationFrame`
+- 既有 `controlsRef.current.stop()` 並列保留
+- 確保「離開頁面後相機指示燈關閉」這個之前修的行為不退化
 
-## 要我幫你做什麼
+**照片上傳**
+- 同樣優先 native：`createImageBitmap(file)` → `detector.detect(bitmap)`
+- 失敗 fallback `reader.decodeFromImageUrl(url)`
 
-請告訴我你想刪哪幾筆 participants（提供 email），我可以：
-1. 直接幫你執行對應的 DELETE SQL（包含先清 coupons / lottery_entries 子表）
-2. 或者你自己去 Cloud → SQL Editor 貼上面的 SQL 執行
+**Log 標記**
+- 啟動時印 `[scan] decoder = native | zxing`，方便日後使用者回報直接看 console 判斷走哪條
 
-如果你選 1，請貼上要刪的 email；如果你想批次清所有測試資料（例如某 prefix），也告訴我規則。
+## 不做的事
+- 不換掉 @zxing/browser（移除會破 iOS）
+- 不加 html5-qrcode 等新依賴（自己包 native API 已足夠）
+- 不動 UI、文案、navigation、coupon 寫入邏輯、其他頁面
+
+## 驗證方式
+- **Galaxy S24 Chrome**：開 `/zh/scan`，console 應印 `[scan] decoder = native`，對紙本 QR 應 < 200ms 命中
+- **iPhone Safari**：console 應印 `[scan] decoder = zxing`，行為與現在完全一致
+- **離開頁面**：相機指示燈仍正常關閉
+
+## 檔案影響
+- 修改：`src/routes/$lang.scan.tsx`（單檔）
+- 不動：DB、其他路由、依賴清單、docs
+
+## 風險
+- 原生 API 在極少數 Android Chrome 版本回傳空陣列但不丟錯 → 保留 ZXing 當第二層 fallback：native 連續 N 秒沒命中時自動切 ZXing（可選加碼，先不做，視實測決定）
