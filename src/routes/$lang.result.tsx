@@ -41,7 +41,7 @@ function ResultPage() {
 
         {tn && (
           <div className="mx-auto mt-4 inline-block rounded-lg bg-muted px-4 py-2 font-mono text-sm">
-            {t("result.tnLabel")}：<span className="font-bold text-primary">{tn}</span>
+            {t("result.tnLabel")}：<span className="font-bold text-primary">{tn.split("__t")[0]}</span>
           </div>
         )}
       </div>
