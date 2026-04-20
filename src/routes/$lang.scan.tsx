@@ -381,6 +381,7 @@ function ScanPage() {
           return;
         }
 
+        streamRef.current = stream;
         video.srcObject = stream;
         video.setAttribute("playsinline", "true");
         video.setAttribute("webkit-playsinline", "true");
