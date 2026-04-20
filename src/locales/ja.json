@@ -53,7 +53,6 @@
     "digits": "数字",
     "submit": "送信",
     "invalidFormat": "形式が正しくありません",
-    "notFound": "レシートが見つかりません",
     "alreadyUsed": "このレシートは既に使用済みです"
   },
   "result": {

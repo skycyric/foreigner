@@ -53,7 +53,6 @@
     "digits": "數字",
     "submit": "送出登錄",
     "invalidFormat": "格式不正確，請輸入兩碼英文後接數字",
-    "notFound": "查無此交易單，請確認後再試",
     "alreadyUsed": "此交易單已參加過抽獎"
   },
   "result": {

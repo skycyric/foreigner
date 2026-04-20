@@ -103,16 +103,14 @@ function ScanPage() {
           return;
         }
 
-        const lookup = await api.lookupTransaction({ tn });
-        if (!lookup.found) {
-          const msg = t("manual.notFound");
-          blockedRef.current = true;
-          setBlockingError(msg);
-          toast.error(msg);
-          await stopScanner();
-          return;
-        }
-        if (lookup.alreadyUsed) {
+        const result = await api.submitLotteryEntry({
+          tn,
+          email,
+          raw_payload: decodedText,
+          source: "qr",
+        });
+
+        if (result.alreadyUsed) {
           const msg = t("manual.alreadyUsed");
           blockedRef.current = true;
           setBlockingError(msg);
@@ -120,13 +118,6 @@ function ScanPage() {
           await stopScanner();
           return;
         }
-
-        await api.submitLotteryEntry({
-          tn,
-          email,
-          raw_payload: decodedText,
-          source: "qr",
-        });
 
         navigatingAway = true;
         await stopScanner();
