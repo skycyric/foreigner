@@ -63,7 +63,7 @@ function CouponsPage() {
   return (
     <PageShell>
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">{t("coupons.title")}</h1>
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">{t("coupons.title")}</h1>
         <button
           onClick={() => {
             clearStoredEmail();
