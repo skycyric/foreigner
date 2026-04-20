@@ -115,7 +115,7 @@ function ScanPage() {
         const email = getStoredEmail();
         if (!email) {
           navigatingAway = true;
-          navigate({ to: "/$lang/welcome", params: { lang } });
+          navigate({ to: "/$lang/welcome", params: { lang }, replace: true });
           return;
         }
 
@@ -137,7 +137,7 @@ function ScanPage() {
 
         navigatingAway = true;
         await stopScanner();
-        navigate({ to: "/$lang/result", params: { lang }, search: { tn } });
+        navigate({ to: "/$lang/result", params: { lang }, search: { tn }, replace: true });
       } catch (e) {
         console.error(e);
         toast.error(String(e));
@@ -361,7 +361,7 @@ function ScanPage() {
   useEffect(() => {
     const email = getStoredEmail();
     if (!email) {
-      navigate({ to: "/$lang/welcome", params: { lang } });
+      navigate({ to: "/$lang/welcome", params: { lang }, replace: true });
       return;
     }
 
@@ -555,7 +555,7 @@ function ScanPage() {
       <div className="mt-4 grid gap-2 sm:grid-cols-3">
         <Button
           variant="secondary"
-          onClick={() => navigate({ to: "/$lang/coupons", params: { lang } })}
+          onClick={() => navigate({ to: "/$lang/coupons", params: { lang }, replace: true })}
           disabled={working}
         >
           {t("scan.back")}
@@ -569,7 +569,7 @@ function ScanPage() {
         </Button>
         <Button
           variant="secondary"
-          onClick={() => navigate({ to: "/$lang/manual", params: { lang } })}
+          onClick={() => navigate({ to: "/$lang/manual", params: { lang }, replace: true })}
           disabled={working}
         >
           {t("coupons.manualBtn")}
