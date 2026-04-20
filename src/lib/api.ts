@@ -144,10 +144,11 @@ export const api = {
       }
       throw error;
     }
-    if (!data?.id) {
+    const entryId = data?.id;
+    if (!entryId) {
       throw new Error("LOTTERY_ENTRY_INSERT_FAILED");
     }
-    return { id: data.id };
+    return { id: entryId };
   },
 
   async getWinners(): Promise<Winner[]> {
