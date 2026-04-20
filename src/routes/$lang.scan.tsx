@@ -248,54 +248,6 @@ function ScanPage() {
         console.warn("applyConstraints failed", e);
       }
     }
-
-    const zoomCap = caps.zoom as { min?: number; max?: number; step?: number } | undefined;
-    if (zoomCap && typeof zoomCap.max === "number" && zoomCap.max > 1) {
-      setZoomSupported(true);
-      setZoomMax(zoomCap.max);
-      setZoomLevel(1);
-    } else {
-      setZoomSupported(false);
-    }
-    if ((caps as { torch?: boolean }).torch) {
-      setTorchSupported(true);
-      setTorchOn(false);
-    } else {
-      setTorchSupported(false);
-    }
-  }
-
-  async function applyZoom(next: number) {
-    const track = getActiveVideoTrack();
-    if (!track) return;
-    try {
-      await track.applyConstraints({
-        advanced: [{ zoom: next }],
-      } as unknown as MediaTrackConstraints);
-      setZoomLevel(next);
-    } catch (e) {
-      console.warn("zoom failed", e);
-    }
-  }
-
-  async function toggleZoom() {
-    if (!zoomSupported) return;
-    const target = zoomLevel === 1 ? Math.min(2, zoomMax) : zoomLevel < zoomMax ? zoomMax : 1;
-    await applyZoom(target);
-  }
-
-  async function toggleTorch() {
-    const track = getActiveVideoTrack();
-    if (!track) return;
-    const next = !torchOn;
-    try {
-      await track.applyConstraints({
-        advanced: [{ torch: next }],
-      } as unknown as MediaTrackConstraints);
-      setTorchOn(next);
-    } catch (e) {
-      console.warn("torch toggle failed", e);
-    }
   }
 
   async function tapToFocus() {
