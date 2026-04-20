@@ -75,7 +75,23 @@ function CouponsPage() {
       </div>
       <p className="mt-1 break-all text-xs text-muted-foreground">{email}</p>
 
-      <div className="mt-4 space-y-3">
+      {/* 抽獎入口 */}
+      <div className="mt-4 rounded-2xl border-2 border-accent bg-accent/10 p-4">
+        <div className="mb-3 flex items-center gap-2">
+          <span className="text-2xl">🎰</span>
+          <p className="text-sm font-medium text-foreground">{t("coupons.lotteryHint")}</p>
+        </div>
+        <div className="space-y-2">
+          <Button asChild className="h-12 w-full font-semibold">
+            <Link to="/$lang/scan" params={{ lang }}>📷 {t("coupons.scanBtn")}</Link>
+          </Button>
+          <Button asChild variant="secondary" className="h-12 w-full font-semibold">
+            <Link to="/$lang/manual" params={{ lang }}>⌨️ {t("coupons.manualBtn")}</Link>
+          </Button>
+        </div>
+      </div>
+
+      <div className="mt-6 space-y-3">
         {coupons === null && (
           <div className="rounded-lg bg-muted p-4 text-center text-sm">{t("common.loading")}</div>
         )}
@@ -100,22 +116,6 @@ function CouponsPage() {
             </div>
           </div>
         ))}
-      </div>
-
-      {/* 抽獎入口 */}
-      <div className="mt-8 rounded-2xl border-2 border-accent bg-accent/10 p-4">
-        <div className="mb-3 flex items-center gap-2">
-          <span className="text-2xl">🎰</span>
-          <p className="text-sm font-medium text-foreground">{t("coupons.lotteryHint")}</p>
-        </div>
-        <div className="space-y-2">
-          <Button asChild className="h-12 w-full font-semibold">
-            <Link to="/$lang/scan" params={{ lang }}>📷 {t("coupons.scanBtn")}</Link>
-          </Button>
-          <Button asChild variant="secondary" className="h-12 w-full font-semibold">
-            <Link to="/$lang/manual" params={{ lang }}>⌨️ {t("coupons.manualBtn")}</Link>
-          </Button>
-        </div>
       </div>
 
       <div className="mt-6 text-center">
