@@ -321,13 +321,15 @@ function ScanPage() {
         await scanner.start(
           preferredCamera?.id ?? { facingMode: { ideal: "environment" } },
           {
-            fps: 10,
+            // 提高 fps：Android 上每秒解碼次數越多，掃到模糊/低解析 QR 的機率越高
+            fps: 15,
             // 不要強制 aspectRatio：Android 上會讓 stream 不符 constraint 造成黑畫面
             // 不要 disableFlip：Android sensor 旋轉常與顯示不一致，需嘗試兩個方向
             qrbox: (viewfinderWidth, viewfinderHeight) => {
               const w = Math.max(1, viewfinderWidth);
               const h = Math.max(1, viewfinderHeight);
-              const edge = Math.max(180, Math.floor(Math.min(w, h) * 0.7));
+              // 加大掃描框（80%），讓 QR Code 更容易落在解碼區
+              const edge = Math.max(220, Math.floor(Math.min(w, h) * 0.8));
               return {
                 width: Math.min(edge, w),
                 height: Math.min(edge, h),
@@ -335,8 +337,10 @@ function ScanPage() {
             },
             videoConstraints: {
               facingMode: { ideal: "environment" },
-              width: { ideal: 1280 },
-              height: { ideal: 720 },
+              // 拉高解析度：Android 預設常給 640x480，QR 模糊就解不出來
+              width: { ideal: 1920, min: 1280 },
+              height: { ideal: 1080, min: 720 },
+              frameRate: { ideal: 30, min: 15 },
             },
           },
           (decodedText) => {
@@ -348,6 +352,8 @@ function ScanPage() {
         startedRef.current = true;
         if (!cancelledRef.current) {
           ensureVideoPlaysInline();
+          // 套用 continuous focus / exposure / white balance（Android 必備）
+          void applyAdvancedTrackConstraints();
           setScannerReady(true);
         }
       } catch (err) {
