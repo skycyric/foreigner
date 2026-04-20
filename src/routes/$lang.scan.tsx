@@ -1,19 +1,9 @@
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router";
 import { ChangeEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BrowserMultiFormatReader, IScannerControls } from "@zxing/browser";
-import { BarcodeFormat, DecodeHintType } from "@zxing/library";
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import { PageShell } from "@/components/Header";
 import { Button } from "@/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { api, isValidTnFormat } from "@/lib/api";
 import { getStoredEmail } from "@/lib/device";
 import { toast } from "sonner";
@@ -49,59 +39,12 @@ function getCameraErrorMessage(error: unknown, t: (key: string) => string): stri
   return t("scan.startFailed");
 }
 
-/** Build ZXing reader — QR-only + TRY_HARDER, throttle to ~5 fps for paper scans. */
-function createReader(): BrowserMultiFormatReader {
-  const hints = new Map();
-  hints.set(DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.QR_CODE]);
-  hints.set(DecodeHintType.TRY_HARDER, true);
-  const reader = new BrowserMultiFormatReader(hints);
-  // 200ms 間隔（~5fps）對紙本 QR 完全夠，CPU 大降
-  (reader as unknown as { timeBetweenScansMillis: number }).timeBetweenScansMillis = 200;
-  return reader;
-}
-
-/**
- * 找出最適合掃 QR 的後鏡頭 deviceId。
- * 重點：必須在拿到 camera 權限「之後」才呼叫，否則 device.label 會是空字串。
- * iPhone 多鏡頭裝置會有 wide/ultra-wide/telephoto，要挑「Back Camera」（主鏡頭），
- * 不要選 ultra-wide（最近對焦距離太遠，紙本 QR 會糊）或 telephoto。
- */
-async function pickBackCameraDeviceId(): Promise<string | undefined> {
-  try {
-    const devices = await BrowserMultiFormatReader.listVideoInputDevices();
-    if (devices.length === 0) return undefined;
-
-    // 1) 優先：label 完全等於 "Back Camera"（iOS Safari 的主鏡頭）
-    const exact = devices.find((d) => /^back camera$/i.test(d.label));
-    if (exact) return exact.deviceId;
-
-    // 2) 其次：label 含 back/rear/環境/後 但「不含」ultra/wide/telephoto
-    const main = devices.find(
-      (d) =>
-        /back|rear|environment|後|后/i.test(d.label) &&
-        !/ultra|wide|telephoto|tele|超廣角|長焦|远摄/i.test(d.label),
-    );
-    if (main) return main.deviceId;
-
-    // 3) 再次：任何含 back/rear 的
-    const anyBack = devices.find((d) => /back|rear|environment|後|后/i.test(d.label));
-    if (anyBack) return anyBack.deviceId;
-
-    // 4) 最後 fallback：第一個（不要選最後一個 — 在 iPhone 上常常是 telephoto）
-    return devices[0]?.deviceId;
-  } catch {
-    return undefined;
-  }
-}
-
 function ScanPage() {
   const { t } = useTranslation();
   const { lang } = useParams({ from: "/$lang/scan" });
   const navigate = useNavigate();
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const readerRef = useRef<BrowserMultiFormatReader | null>(null);
-  const controlsRef = useRef<IScannerControls | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
+  const containerId = "qr-reader";
+  const scannerRef = useRef<Html5Qrcode | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const startedRef = useRef(false);
   const busyRef = useRef(false);
@@ -109,56 +52,42 @@ function ScanPage() {
   const blockedRef = useRef(false);
   const processedTnsRef = useRef<Set<string>>(new Set());
   const restartScannerRef = useRef<null | (() => Promise<void>)>(null);
-  const processDecodedTextRef = useRef<(text: string) => Promise<void>>(async () => {});
   const [error, setError] = useState<string | null>(null);
   const [blockingError, setBlockingError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [fileScanning, setFileScanning] = useState(false);
   const [scannerReady, setScannerReady] = useState(false);
   const [needsTap, setNeedsTap] = useState(false);
+  const [zoomSupported, setZoomSupported] = useState(false);
+  const [zoomMax, setZoomMax] = useState(1);
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [torchSupported, setTorchSupported] = useState(false);
+  const [torchOn, setTorchOn] = useState(false);
 
   const setBusyState = useCallback((next: boolean) => {
     busyRef.current = next;
     setBusy(next);
   }, []);
 
-  const stopScanner = useCallback(async () => {
-    if (controlsRef.current) {
-      try {
-        controlsRef.current.stop();
-      } catch {
-        /* ignore */
-      }
-      controlsRef.current = null;
+  const stopScanner = useCallback(async (clear = false) => {
+    const scanner = scannerRef.current;
+    if (!scanner) return;
+
+    if (startedRef.current) {
+      await scanner.stop().catch(() => {});
+      startedRef.current = false;
     }
-    // 用獨立 streamRef 確保一定能停到 tracks（不依賴 videoRef，可能已被 React unmount 清掉）
-    const stream = streamRef.current;
-    if (stream) {
-      stream.getTracks().forEach((tr) => {
-        try {
-          tr.stop();
-        } catch {
-          /* ignore */
-        }
-      });
-      streamRef.current = null;
-    }
-    const video = videoRef.current;
-    if (video && video.srcObject) {
+
+    setTorchOn(false);
+    setZoomLevel(1);
+
+    if (clear) {
       try {
-        video.pause();
-      } catch {
-        /* ignore */
-      }
-      video.srcObject = null;
-      try {
-        video.removeAttribute("src");
-        video.load();
+        scanner.clear();
       } catch {
         /* ignore */
       }
     }
-    startedRef.current = false;
   }, []);
 
   const processDecodedText = useCallback(
@@ -166,11 +95,14 @@ function ScanPage() {
       if (busyRef.current || cancelledRef.current || blockedRef.current) return;
 
       const tn = extractTn(decodedText);
+      // 防止同一張單在這次掃描期間被反覆觸發
       if (processedTnsRef.current.has(tn)) return;
       processedTnsRef.current.add(tn);
 
+      // 基本格式驗證：擋掉網址 / 任意字串 / 條碼等不像交易單的內容
       if (!isValidTnFormat(tn)) {
         toast.error(t("scan.invalidFormat"));
+        // 允許使用者把同一個錯誤 QR 移開後重掃 → 短暫後移除黑名單
         setTimeout(() => processedTnsRef.current.delete(tn), 1500);
         return;
       }
@@ -205,15 +137,11 @@ function ScanPage() {
 
         navigatingAway = true;
         await stopScanner();
-        navigate({
-          to: "/$lang/result",
-          params: { lang },
-          search: { tn },
-          replace: true,
-        });
+        navigate({ to: "/$lang/result", params: { lang }, search: { tn }, replace: true });
       } catch (e) {
         console.error(e);
         toast.error(String(e));
+        // 發生錯誤時讓使用者可重試此 TN
         processedTnsRef.current.delete(tn);
       } finally {
         if (!navigatingAway && !cancelledRef.current) {
@@ -240,26 +168,24 @@ function ScanPage() {
 
     if (!file || busyRef.current || fileScanning) return;
 
-    const reader = readerRef.current;
-    if (!reader) return;
+    const scanner = scannerRef.current;
+    if (!scanner) return;
 
     const shouldRestart = startedRef.current;
     setFileScanning(true);
     setScannerReady(false);
     setError(null);
 
-    const url = URL.createObjectURL(file);
     try {
       await stopScanner();
-      const result = await reader.decodeFromImageUrl(url);
-      await processDecodedText(result.getText());
+      const decodedText = await scanner.scanFile(file, true);
+      await processDecodedText(decodedText);
     } catch (e) {
       console.error("photo scan failed", e);
       const message = t("scan.uploadFailed");
       setError(message);
       toast.error(message);
     } finally {
-      URL.revokeObjectURL(url);
       if (!cancelledRef.current) {
         setFileScanning(false);
         if (!busyRef.current && shouldRestart) {
@@ -269,8 +195,27 @@ function ScanPage() {
     }
   }
 
+  function ensureVideoPlaysInline() {
+    const container = document.getElementById(containerId);
+    const video = container?.querySelector("video");
+    if (!video) return;
+    video.setAttribute("playsinline", "true");
+    video.setAttribute("webkit-playsinline", "true");
+    video.setAttribute("muted", "true");
+    video.muted = true;
+    video.autoplay = true;
+    const playPromise = video.play();
+    if (playPromise && typeof playPromise.catch === "function") {
+      playPromise.catch(() => {
+        // 自動播放失敗 → 需要使用者點一下才能恢復
+        setNeedsTap(true);
+      });
+    }
+  }
+
   function getActiveVideoTrack(): MediaStreamTrack | null {
-    const video = videoRef.current;
+    const container = document.getElementById(containerId);
+    const video = container?.querySelector("video") as HTMLVideoElement | null;
     const stream = video?.srcObject as MediaStream | null;
     return stream?.getVideoTracks?.()[0] ?? null;
   }
@@ -299,10 +244,12 @@ function ScanPage() {
       advanced.push({ whiteBalanceMode: "continuous" });
     }
 
+    // Paper QR is usually 10–20cm — bias focus distance to near if supported.
     const focusDistance = caps.focusDistance as
       | { min?: number; max?: number; step?: number }
       | undefined;
     if (focusDistance && typeof focusDistance.min === "number") {
+      // Smaller focusDistance = closer focus on most Android devices.
       advanced.push({ focusDistance: focusDistance.min });
     }
 
@@ -313,8 +260,59 @@ function ScanPage() {
         console.warn("applyConstraints failed", e);
       }
     }
+
+    // Detect zoom / torch capability for the toolbar
+    const zoomCap = caps.zoom as { min?: number; max?: number; step?: number } | undefined;
+    if (zoomCap && typeof zoomCap.max === "number" && zoomCap.max > 1) {
+      setZoomSupported(true);
+      setZoomMax(zoomCap.max);
+      setZoomLevel(1);
+    } else {
+      setZoomSupported(false);
+    }
+    if ((caps as { torch?: boolean }).torch) {
+      setTorchSupported(true);
+      setTorchOn(false);
+    } else {
+      setTorchSupported(false);
+    }
   }
 
+  async function applyZoom(next: number) {
+    const track = getActiveVideoTrack();
+    if (!track) return;
+    try {
+      await track.applyConstraints({
+        advanced: [{ zoom: next }],
+      } as unknown as MediaTrackConstraints);
+      setZoomLevel(next);
+    } catch (e) {
+      console.warn("zoom failed", e);
+    }
+  }
+
+  async function toggleZoom() {
+    if (!zoomSupported) return;
+    // Cycle 1x → 2x → max → 1x (cap 2x against zoomMax)
+    const target = zoomLevel === 1 ? Math.min(2, zoomMax) : zoomLevel < zoomMax ? zoomMax : 1;
+    await applyZoom(target);
+  }
+
+  async function toggleTorch() {
+    const track = getActiveVideoTrack();
+    if (!track) return;
+    const next = !torchOn;
+    try {
+      await track.applyConstraints({
+        advanced: [{ torch: next }],
+      } as unknown as MediaTrackConstraints);
+      setTorchOn(next);
+    } catch (e) {
+      console.warn("torch toggle failed", e);
+    }
+  }
+
+  /** Tap-to-focus: trigger one-shot focus then return to continuous. */
   async function tapToFocus() {
     const track = getActiveVideoTrack();
     if (!track) return;
@@ -333,6 +331,7 @@ function ScanPage() {
     } catch (e) {
       console.warn("tap-to-focus failed", e);
     }
+    // Restore continuous focus so subsequent frames stay sharp.
     if (focusModes.includes("continuous")) {
       try {
         await track.applyConstraints({
@@ -346,7 +345,8 @@ function ScanPage() {
 
   async function resumeVideoPlayback() {
     setNeedsTap(false);
-    const video = videoRef.current;
+    const container = document.getElementById(containerId);
+    const video = container?.querySelector("video");
     if (!video) return;
     try {
       video.muted = true;
@@ -356,6 +356,7 @@ function ScanPage() {
       setNeedsTap(true);
     }
   }
+
 
   useEffect(() => {
     const email = getStoredEmail();
@@ -369,99 +370,64 @@ function ScanPage() {
     setError(null);
     setScannerReady(false);
 
-    const reader = createReader();
-    readerRef.current = reader;
+    const scanner = new Html5Qrcode(containerId, {
+      verbose: false,
+      formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+      // 關閉原生 BarcodeDetector：Android Chrome 上常見「啟動成功但永遠不回傳結果」
+      useBarCodeDetectorIfSupported: false,
+    });
+    scannerRef.current = scanner;
 
     async function startScanner() {
       if (cancelledRef.current || busyRef.current) return;
-
-      const video = videoRef.current;
-      if (!video) return;
 
       setError(null);
       setScannerReady(false);
 
       try {
-        // 第一步：先用 facingMode environment 拿到「相機權限」，
-        // 之後 enumerateDevices 才會回傳真正的 device.label，可挑主鏡頭。
-        // 這個 stream 只是引子，拿到 deviceId 後就會被 ZXing 自己接手換掉。
-        let primingStream: MediaStream | null = null;
-        try {
-          primingStream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: { ideal: "environment" } },
-            audio: false,
-          });
-        } catch (err) {
-          // 權限拒絕 / 沒相機 — 直接拋出讓外層處理
-          throw err;
-        } finally {
-          // priming 用完立刻關，避免和 ZXing 等下要開的 stream 搶 track
-          primingStream?.getTracks().forEach((tr) => {
-            try {
-              tr.stop();
-            } catch {
-              /* ignore */
-            }
-          });
-        }
+        const cameras = await Html5Qrcode.getCameras().catch(() => []);
+        const preferredCamera =
+          cameras.find(({ label }) => /back|rear|environment|world|後|后/i.test(label)) ??
+          cameras[cameras.length - 1];
 
-        if (cancelledRef.current) return;
-
-        // 第二步：拿到權限後再 enumerate，挑出真正的後置主鏡頭
-        const deviceId = await pickBackCameraDeviceId();
-
-        if (cancelledRef.current) return;
-
-        // 第三步：把 stream 生命週期完全交給 ZXing — 它會自己等 video ready
-        // 才開始解碼，避免「video 還沒 ready 就 decode 拿到黑畫面」的問題。
-        // 720p 比 1080p 解碼快 2.25x，對 QR 完全夠。
-        const constraints: MediaStreamConstraints = {
-          video: deviceId
-            ? {
-                deviceId: { exact: deviceId },
-                width: { ideal: 1280, min: 960 },
-                height: { ideal: 720, min: 540 },
-                frameRate: { ideal: 30, min: 24 },
-              }
-            : {
-                facingMode: { ideal: "environment" },
-                width: { ideal: 1280, min: 960 },
-                height: { ideal: 720, min: 540 },
-                frameRate: { ideal: 30, min: 24 },
-              },
-          audio: false,
-        };
-
-        video.setAttribute("playsinline", "true");
-        video.muted = true;
-
-        const controls = await reader.decodeFromConstraints(
-          constraints,
-          video,
-          (result, _err, c) => {
-            if (cancelledRef.current) {
-              c.stop();
-              return;
-            }
-            if (result) {
-              void processDecodedTextRef.current(result.getText());
-            }
-            // _err 多半是 NotFoundException（每幀沒掃到），忽略即可
+        await scanner.start(
+          preferredCamera?.id ?? { facingMode: { ideal: "environment" } },
+          {
+            // 提高 fps：Android 上每秒解碼次數越多，掃到模糊/低解析 QR 的機率越高
+            fps: 15,
+            // 不要強制 aspectRatio：Android 上會讓 stream 不符 constraint 造成黑畫面
+            // 不要 disableFlip：Android sensor 旋轉常與顯示不一致，需嘗試兩個方向
+            qrbox: (viewfinderWidth, viewfinderHeight) => {
+              const w = Math.max(1, viewfinderWidth);
+              const h = Math.max(1, viewfinderHeight);
+              // 加大掃描框（80%），讓 QR Code 更容易落在解碼區
+              const edge = Math.max(220, Math.floor(Math.min(w, h) * 0.8));
+              return {
+                width: Math.min(edge, w),
+                height: Math.min(edge, h),
+              };
+            },
+            videoConstraints: {
+              facingMode: { ideal: "environment" },
+              // 拉高解析度：Android 預設常給 640x480，QR 模糊就解不出來
+              width: { ideal: 1920, min: 1280 },
+              height: { ideal: 1080, min: 720 },
+              frameRate: { ideal: 30, min: 15 },
+            },
           },
+          (decodedText) => {
+            void processDecodedText(decodedText);
+          },
+          () => {},
         );
 
-        if (cancelledRef.current) {
-          controls.stop();
-          return;
-        }
-
-        controlsRef.current = controls;
-        // 把 ZXing 接管的 stream 同步到 streamRef，cleanup 才能保證關閉相機
-        streamRef.current = (video.srcObject as MediaStream | null) ?? null;
         startedRef.current = true;
-
-        void applyAdvancedTrackConstraints();
-        setScannerReady(true);
+        if (!cancelledRef.current) {
+          ensureVideoPlaysInline();
+          // 套用 continuous focus / exposure / white balance（Android 必備）
+          void applyAdvancedTrackConstraints();
+          setScannerReady(true);
+        }
       } catch (err) {
         console.error("camera start failed", err);
         if (!cancelledRef.current) {
@@ -484,43 +450,13 @@ function ScanPage() {
       cancelledRef.current = true;
       restartScannerRef.current = null;
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-
-      // 停掉 ZXing controls
-      if (controlsRef.current) {
-        try {
-          controlsRef.current.stop();
-        } catch {
-          /* ignore */
+      void stopScanner(true).finally(() => {
+        if (scannerRef.current === scanner) {
+          scannerRef.current = null;
         }
-        controlsRef.current = null;
-      }
-      // 停掉 video stream（torch 會跟著熄）— 用 streamRef 確保即使 videoRef 已清空也能停
-      const stream = streamRef.current;
-      if (stream) {
-        stream.getTracks().forEach((t) => t.stop());
-        streamRef.current = null;
-      }
-      const video = videoRef.current;
-      if (video) {
-        try {
-          video.pause();
-        } catch {
-          /* ignore */
-        }
-        video.srcObject = null;
-      }
-      readerRef.current = null;
-      startedRef.current = false;
+      });
     };
-    // 只依賴 lang — processDecodedText / t / navigate 透過 ref 取最新值，
-    // 避免語言切換或 callback 重建造成 scanner 重啟。
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lang]);
-
-  // 把最新的 processDecodedText 同步到 ref，給 ZXing callback 用
-  useEffect(() => {
-    processDecodedTextRef.current = processDecodedText;
-  }, [processDecodedText]);
+  }, [lang, navigate, processDecodedText, stopScanner, t]);
 
   const working = busy || fileScanning;
   const statusMessage = working
@@ -531,10 +467,11 @@ function ScanPage() {
 
   return (
     <PageShell>
-      <h1 className="text-xl font-semibold tracking-tight text-foreground">{t("scan.title")}</h1>
+      <h1 className="text-xl font-bold">{t("scan.title")}</h1>
       <p className="mt-1 text-sm text-muted-foreground">{t("scan.hint")}</p>
 
       <div
+        id={containerId}
         onClick={() => {
           if (needsTap) {
             void resumeVideoPlayback();
@@ -542,26 +479,39 @@ function ScanPage() {
             void tapToFocus();
           }
         }}
-        className="relative mt-4 overflow-hidden rounded-xl border border-foreground bg-black cursor-pointer aspect-square"
-      >
-        <video
-          ref={videoRef}
-          className="h-full w-full object-cover"
-          playsInline
-          muted
-          autoPlay
-        />
-        {/* 視覺引導框 — 不影響解碼 */}
-        {scannerReady && !needsTap && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <div className="h-3/5 w-3/5 rounded-lg border-2 border-white/70 shadow-[0_0_0_9999px_rgba(0,0,0,0.25)]" />
-          </div>
-        )}
-      </div>
+        className="mt-4 overflow-hidden rounded-xl border-2 border-primary bg-black cursor-pointer"
+      />
 
       <div className="mt-3 rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
         {needsTap ? t("scan.tapToResume") : statusMessage}
       </div>
+
+      {(zoomSupported || torchSupported) && scannerReady && !needsTap && (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {zoomSupported && (
+            <Button
+              type="button"
+              variant={zoomLevel > 1 ? "default" : "outline"}
+              size="sm"
+              onClick={() => void toggleZoom()}
+              disabled={working}
+            >
+              {t("scan.zoom")} {zoomLevel.toFixed(zoomLevel % 1 === 0 ? 0 : 1)}x
+            </Button>
+          )}
+          {torchSupported && (
+            <Button
+              type="button"
+              variant={torchOn ? "default" : "outline"}
+              size="sm"
+              onClick={() => void toggleTorch()}
+              disabled={working}
+            >
+              {t("scan.torch")}{torchOn ? " ✓" : ""}
+            </Button>
+          )}
+        </div>
+      )}
 
       {scannerReady && !needsTap && !working && (
         <>
@@ -570,19 +520,20 @@ function ScanPage() {
         </>
       )}
 
-      <AlertDialog open={!!blockingError}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("scan.rescanTitle")}</AlertDialogTitle>
-            <AlertDialogDescription>{blockingError}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction onClick={() => void handleRescan()}>
-              {t("scan.rescan")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {blockingError && (
+        <div className="mt-4 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+          <p>{blockingError}</p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="mt-2"
+            onClick={() => void handleRescan()}
+          >
+            {t("scan.rescan")}
+          </Button>
+        </div>
+      )}
 
       {error && !blockingError && (
         <div className="mt-4 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
