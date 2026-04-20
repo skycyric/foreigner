@@ -445,12 +445,20 @@ function ScanPage() {
         }
         controlsRef.current = null;
       }
-      // 停掉 video stream（torch 會跟著熄）
-      const video = videoRef.current;
-      const stream = video?.srcObject as MediaStream | null;
+      // 停掉 video stream（torch 會跟著熄）— 用 streamRef 確保即使 videoRef 已清空也能停
+      const stream = streamRef.current;
       if (stream) {
         stream.getTracks().forEach((t) => t.stop());
-        if (video) video.srcObject = null;
+        streamRef.current = null;
+      }
+      const video = videoRef.current;
+      if (video) {
+        try {
+          video.pause();
+        } catch {
+          /* ignore */
+        }
+        video.srcObject = null;
       }
       readerRef.current = null;
       startedRef.current = false;
