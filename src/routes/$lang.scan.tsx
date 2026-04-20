@@ -93,6 +93,19 @@ function ScanPage() {
       }
       controlsRef.current = null;
     }
+    // 同步停掉 video stream 的所有 tracks，立刻熄掉相機指示燈
+    const video = videoRef.current;
+    const stream = video?.srcObject as MediaStream | null;
+    if (stream) {
+      stream.getTracks().forEach((tr) => {
+        try {
+          tr.stop();
+        } catch {
+          /* ignore */
+        }
+      });
+      if (video) video.srcObject = null;
+    }
     startedRef.current = false;
   }, []);
 
