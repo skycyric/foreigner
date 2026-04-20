@@ -78,22 +78,50 @@
     "body": "1. Any purchase during the event qualifies for the draw.\n2. One email can register multiple receipts, but each receipt can only be registered once.\n3. Coupons are issued based on purchase amount.\n4. Winners will be notified by email."
   },
   "terms": {
-    "title": "Privacy Terms",
-    "intro": "In accordance with the Personal Data Protection Act and related regulations, please read the following notice and consent items carefully before participating. By submitting personal data through this campaign website, you are deemed to have fully understood and agreed to the following items.",
-    "noticeHeading": "Notice Items",
-    "noticeIntro": "In accordance with the Personal Data Protection Act and related regulations, the following notice items are provided:",
+    "title": "Privacy Policy",
+    "updated": "Last Updated: March 19, 2024",
+    "intro": "Ever Rich Duty Free Shop official website (www.everrich-group.com, \"Ever Rich\", \"this Website\", \"the company\", \"we\", \"our\" or \"us\") is committed to the protection of your personal information. Our policies comply with our obligations under Taiwan's Personal Information Protection Act (PIPA) and are intended to protect your privacy in respect of any personal information that you may provide us.\nBefore using this Website, please read the following privacy policies first. By using the pages of this Website, you agree to our Privacy Policy; we have the legal right to collect, process and utilize your personal information. If you do not agree, you should not use this Website.\nThe company reserves the right, at any time and from time to time, for any reasons in our sole discretion, to change the Privacy Policy.\nThe Privacy Policy is originally written in Traditional Chinese. In case of discrepancies, the version in Traditional Chinese reserves all rights and prevails over any other translated versions.",
     "sections": [
-      { "title": "Data Collector", "body": "Ever Rich Duty Free Shop Co., Ltd." },
-      { "title": "Purpose of Collection", "body": "Consumer promotional campaign." },
-      { "title": "Categories of Personal Data", "body": "Identifying information (e.g. name, mobile number, and other items listed on the participation page and campaign rules)." },
-      { "title": "Online Lucky Draw", "body": "When a participant submits campaign data through this website, they are deemed to have consented to Ever Rich Duty Free Shop Co., Ltd. processing and using the submitted personal data within the scope necessary for this campaign." },
-      { "title": "Period of Data Use", "body": "Personal data provided by participants will be used from the campaign start date until 1 year after the campaign ends." },
-      { "title": "Winners", "body": "Personal data filled on winners' receipts will be used solely for prize delivery and personal income tax reporting. Per tax regulations, such data may be retained for up to 7 years and will then be destroyed and not used for any other purpose." },
-      { "title": "Parties and Methods of Use", "body": "Personnel necessary for executing this campaign at Ever Rich Duty Free Shop Co., Ltd. will use the data only as necessary for campaign operations." },
-      { "title": "Region of Use", "body": "This campaign is open to participants regardless of residency in Taiwan. Personal data collected will not be transferred outside Taiwan, Kinmen, Penghu, or Matsu." },
-      { "title": "Rights under Article 3 of the Personal Data Protection Act", "body": "After identity verification, participants may apply to Ever Rich Duty Free customer service to inquire, review, obtain copies; or supplement/correct, request to stop collection, processing, or use, or delete part or all of their personal data. By submitting required personal data to Ever Rich Duty Free Shop Co., Ltd. by any means, participants consent to its processing and use within the scope necessary for the campaign's specific purpose. Participants may choose whether to fill in personal data fields; if not provided, Ever Rich Duty Free Shop Co., Ltd. reserves the right to determine eligibility." },
-      { "title": "Provision of Personal Data", "body": "Participants agree to provide the personal data listed in the campaign rules to Ever Rich Duty Free Shop Co., Ltd. without charge or condition for reasonable processing and use within the participant's business scope." },
-      { "title": "Security Measures", "body": "Ever Rich Duty Free Shop Co., Ltd. will protect participants' personal data in accordance with relevant laws and established comprehensive measures." }
+      {
+        "title": "The Scope of the Privacy Policy",
+        "body": "Our Privacy Policy applies to the reception, processing and collection of your personal information while accessing services provided on this Website. However, the Privacy Protection Policy does not apply to external sites and resources, including personnel who is not entrusted or involved in the management of this Website."
+      },
+      {
+        "title": "The Collection, Processing & Utilization of Personal Data",
+        "body": "When you visit this Website or use its provided services, regarding the type of services, the information you provide will only be processed and utilized for such specified purpose(s). (For example, when using emailing service, we will retain information such as your name, email address, contact number and usage time, etc.)\nThis Website will record the name, email address and contact number provided by you, including the time when you use the emailing service on our page.\nDuring browsing, the server will automatically record relevant actions — including data such as the IP address you have used to connect, usage time, type of browser, browsed and clicked links — for reference for the improvement of this Website. This record will only be utilized internally and will not be made public."
+      },
+      {
+        "title": "The Protection & Storage of Data",
+        "body": "Our website servers are all set up with relevant data security equipment and mandatory safety protection measures, including firewalls and anti-virus systems, using the strictest protection procedures to ensure the safety of this Website and your own personal data. Only authorized personnel will have access to your personal data; all relevant processing agents have signed a confidentiality agreement. Anyone who has violated the confidentiality agreement will be penalized legally.\nAs a result of business needs, should it be necessary to appoint other relevant offices to provide services for this Website, we will also strictly demand them to adhere to confidentiality obligations and adopt necessary checking procedures to ensure that the confidentiality obligations are followed.\nCollected personal data is strictly kept safe in the company's database, using technologies and procedures that meet the industry's standard, in order to protect your personal information.\nTime period, territory, recipients and methods of use of personal data: Our company values the protection of your privacy, and we will collect, process and use your personal data in accordance with the Personal Data Protection Act of R.O.C. and this Privacy Policy, and will also allow you to exercise your rights to and protect your personal data rights. If you disagree with all or a portion of this Privacy Policy, please cease your use of the services of this website."
+      },
+      {
+        "title": "External Links on the Website",
+        "body": "The pages of this Website provide links to other external sites, and therefore, when clicking links within our website, you may connect to other sites. However, our Privacy Protection Policy does not apply to other sites. You should refer to the privacy protection policies of the linked sites."
+      },
+      {
+        "title": "The Policy of Sharing Personal Information with Third Parties",
+        "body": "We will not provide, exchange, lease or sell any personal information to other individuals, groups, private enterprises or public organizations, except those with legal basis or contractual obligations.\nThe circumstances of the foregoing proviso include, but are not limited to:\n• With your written consent.\n• The law expressly states.\n• To save you from danger in/on your life, body, freedom or properties.\n• When your conducts on this Website violate the Terms of Use, damage or obstruct the rights of this Website and/or other users or cause harm to any person, the website management may reveal your personal data to identify, contact or take legal action if necessary.\n• Benefit your rights.\nWhen this Website entrusts third-parties to assist in the collection, processing or utilization of your personal data, it will be responsible for supervising the said parties."
+      },
+      {
+        "title": "Exceptions Clause for Personal Information Non-Disclosure",
+        "body": "This Website may moderately disclose your personal information when:\n• Judicial organizations or authorities exercise the laws and require the revealing of the information.\n• The consent is given by you or authorized personnel.\n• The information is publicly disclosed by you."
+      },
+      {
+        "title": "The Use of Cookies",
+        "body": "In order to provide the best service, this Website will install and access our Cookies on your computer. If you do not wish Cookies to be installed, you may change the privacy level setting on your browser to \"high\", then the installation of the Cookie will be rejected. However, this may result some of the functions of the website to work irregularly."
+      },
+      {
+        "title": "Amendments to the Privacy Protection Policy",
+        "body": "The Privacy Protection Policy of this Website may be amended as required at any time. Amended articles will be published on this Website."
+      },
+      {
+        "title": "Explanatory Clauses of this Notification Message",
+        "body": "Our company/this service will send important messages in the form of notification messages to you. Accordingly, despite that you have not yet become a customer or member of our company/this service, you are still able to receive notification messages.\nNotification messages sent by our company/this service are limited to effective and important messages to you only, and all other messages for advertisement or other purposes will not be sent. Upon satisfaction of the following three conditions, you will be able to receive notification messages.\n(1) Telephone number set up in your LINE Account matches with the telephone number sent by our company/this service.\n(2) In the LINE APP setting, your LINE Account has been set to accept notification messages.\n(3) Your LINE Account is not set to block our LINE Official Account for message transmission.\nTo change the setting for notification messages, please follow the instructions below: Click \"Home\" > \"Setting\" > \"Privacy Setting\" > \"Provide User Data\" > \"LINE Notification Messages\", then turn ON \"Receive LINE Notification Messages\". Please note that after \"Receive LINE Notification Messages\" is turned OFF, your LINE Account will not receive any notification messages from corporate official accounts or certified official accounts."
+      },
+      {
+        "title": "Consultation on Privacy Protection Policy",
+        "body": "If you have any questions or advice about our policies, you are welcome to email us. We will reply to your message(s) as soon as possible."
+      }
     ]
   },
   "common": {
