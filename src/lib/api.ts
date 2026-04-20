@@ -47,10 +47,6 @@ export interface Winner {
   is_backup: boolean;
 }
 
-export interface LookupResult {
-  alreadyUsed: boolean;
-}
-
 const API_BASE = import.meta.env.VITE_API_BASE_URL as string | undefined;
 const USE_REMOTE_API = Boolean(API_BASE);
 
