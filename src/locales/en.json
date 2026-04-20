@@ -42,6 +42,7 @@
     "uploadHint": "If live scanning does not react, take a photo or upload a receipt image instead.",
     "uploadFailed": "The QR code could not be read from the photo. Please try a clearer image or enter it manually.",
     "tapToResume": "The browser paused the camera. Tap the preview to resume.",
+    "tapToFocus": "Tip: keep good lighting, hold 20–30 cm away, and tap the preview to refocus if blurry.",
     "rescan": "Scan again",
     "back": "Back"
   },
