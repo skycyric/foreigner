@@ -162,7 +162,9 @@ function WelcomePage() {
               autoCorrect="off"
               spellCheck={false}
               value={customDomain}
-              onChange={(e) => setCustomDomain(e.target.value.replace(/@/g, ""))}
+              onChange={(e) =>
+                setCustomDomain(e.target.value.trim().replace(/^@+/, "").toLowerCase())
+              }
               placeholder="example.com"
               className="mt-2 text-base"
             />
