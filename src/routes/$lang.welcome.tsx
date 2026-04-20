@@ -113,7 +113,7 @@ function WelcomePage() {
               autoCorrect="off"
               spellCheck={false}
               value={account}
-              onChange={(e) => setAccount(e.target.value.replace(/@/g, ""))}
+              onChange={(e) => handleAccountChange(e.target.value)}
               placeholder="yourname"
               className="rounded-r-none text-base"
             />
