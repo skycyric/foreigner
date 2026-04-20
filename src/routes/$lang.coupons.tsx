@@ -92,7 +92,29 @@ function CouponsPage() {
       </div>
 
       <div className="mt-6 space-y-3">
-...
+        {coupons === null && (
+          <div className="rounded-lg bg-muted p-4 text-center text-sm">{t("common.loading")}</div>
+        )}
+        {coupons && coupons.length === 0 && (
+          <div className="rounded-lg border border-dashed border-border bg-card p-6 text-center text-sm text-muted-foreground">
+            {t("coupons.empty")}
+          </div>
+        )}
+        {coupons?.map((c) => (
+          <div
+            key={c.coupon_code}
+            className="overflow-hidden rounded-xl border-2 border-primary/20 bg-card shadow-sm"
+          >
+            <div
+              className="px-4 py-2 text-sm font-semibold text-primary-foreground"
+              style={{ background: "var(--gradient-festive)" }}
+            >
+              {c.note ?? "Discount Coupon"}
+            </div>
+            <div className="bg-white px-2 py-3">
+              <Barcode value={c.coupon_code} />
+            </div>
+          </div>
         ))}
       </div>
 
