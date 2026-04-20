@@ -436,15 +436,59 @@ function ScanPage() {
     readerRef.current = reader;
     nativeCanvasRef.current = document.createElement("canvas");
 
+    /** Start ZXing fallback decode loop on the existing video element. */
+    async function startZxingLoop(video: HTMLVideoElement) {
+      try {
+        const controls = await reader.decodeFromVideoElement(video, (result, _err, c) => {
+          if (cancelledRef.current) {
+            c.stop();
+            return;
+          }
+          if (result) {
+            void processDecodedTextRef.current(result.getText());
+          } else {
+            releaseLatchedTnIfLost();
+          }
+        });
+        controlsRef.current = controls;
+        startedRef.current = true;
+      } catch (e) {
+        console.error("[scan] zxing start failed", e);
+        if (!cancelledRef.current) {
+          setError(getCameraErrorMessage(e, t));
+        }
+      }
+    }
+
+    /** Switch from native loop to ZXing on the same active video stream. */
+    function switchToZxing(video: HTMLVideoElement, reason: string) {
+      if (nativeFallbackTriggeredRef.current) return;
+      nativeFallbackTriggeredRef.current = true;
+      console.warn(`[scan] native → zxing fallback (${reason})`);
+      stopNativeLoop();
+      nativeDetectorRef.current = null;
+      void startZxingLoop(video);
+    }
+
     /** Native BarcodeDetector loop — feeds center-cropped frames at ~5fps. */
     function startNativeLoop(video: HTMLVideoElement, detector: NativeBarcodeDetector) {
       const SCAN_INTERVAL_MS = 200;
+      nativeStartedAtRef.current = performance.now();
+      lastNativeHitAtRef.current = nativeStartedAtRef.current;
       const tick = () => {
         if (cancelledRef.current || !startedRef.current || blockedRef.current) {
           nativeLoopRef.current = null;
           return;
         }
         const now = performance.now();
+        // 自動 fallback：啟動後 NATIVE_FALLBACK_MS 內若都沒有命中過任何 QR，切到 ZXing
+        if (
+          !nativeFallbackTriggeredRef.current &&
+          now - lastNativeHitAtRef.current > NATIVE_FALLBACK_MS
+        ) {
+          switchToZxing(video, `no hit in ${NATIVE_FALLBACK_MS}ms`);
+          return;
+        }
         if (now - lastNativeScanAtRef.current >= SCAN_INTERVAL_MS && !busyRef.current) {
           lastNativeScanAtRef.current = now;
           const canvas = nativeCanvasRef.current;
@@ -456,6 +500,7 @@ function ScanPage() {
                 .then((results) => {
                   if (cancelledRef.current) return;
                   if (results.length > 0 && results[0].rawValue) {
+                    lastNativeHitAtRef.current = performance.now();
                     void processDecodedTextRef.current(results[0].rawValue);
                   } else {
                     releaseLatchedTnIfLost();
@@ -480,6 +525,7 @@ function ScanPage() {
 
       setError(null);
       setScannerReady(false);
+      nativeFallbackTriggeredRef.current = false;
 
       try {
         // 先 enumerate 找出 back camera；找不到就讓 ZXing 用 facingMode environment 預設
@@ -532,7 +578,7 @@ function ScanPage() {
         }
 
         // 三層分流：Tier 1 native BarcodeDetector（S24 / 新 Android Chrome）
-        // → Tier 2 @zxing/browser（iOS Safari / 舊瀏覽器）
+        // → Tier 2 @zxing/browser（iOS Safari / 舊瀏覽器 / native 5s 沒命中）
         const NativeCtor = getNativeDetectorCtor();
         if (NativeCtor) {
           try {
@@ -548,21 +594,8 @@ function ScanPage() {
         }
 
         if (!nativeDetectorRef.current) {
-          // ZXing 持續從 <video> 元素抓 frame 解碼
-          console.info("[scan] decoder = zxing fallback");
-          const controls = await reader.decodeFromVideoElement(video, (result, _err, c) => {
-            if (cancelledRef.current) {
-              c.stop();
-              return;
-            }
-            if (result) {
-              void processDecodedTextRef.current(result.getText());
-            } else {
-              releaseLatchedTnIfLost();
-            }
-          });
-          controlsRef.current = controls;
-          startedRef.current = true;
+          console.info("[scan] decoder = zxing");
+          await startZxingLoop(video);
         }
 
         if (!cancelledRef.current) {
