@@ -420,7 +420,7 @@ function ScanPage() {
 
         // Step 3: 用挑好的 deviceId 啟動掃描
         const controls = await reader.decodeFromVideoDevice(
-          deviceId ?? null,
+          deviceId,
           video,
           (result, _err, ctrl) => {
             if (cancelledRef.current) {
