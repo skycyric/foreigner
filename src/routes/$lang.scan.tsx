@@ -206,6 +206,71 @@ function ScanPage() {
     }
   }
 
+  /**
+   * Apply advanced video constraints (continuous focus, exposure, higher
+   * resolution) after the stream starts. Many Android devices ignore these
+   * inside the initial getUserMedia constraints but accept them via
+   * applyConstraints on the live track.
+   */
+  async function applyAdvancedTrackConstraints() {
+    const container = document.getElementById(containerId);
+    const video = container?.querySelector("video") as HTMLVideoElement | null;
+    const stream = video?.srcObject as MediaStream | null;
+    const track = stream?.getVideoTracks?.()[0];
+    if (!track) return;
+
+    const caps = (track.getCapabilities?.() ?? {}) as Record<string, unknown>;
+    const advanced: Record<string, unknown>[] = [];
+
+    const focusModes = (caps.focusMode as string[] | undefined) ?? [];
+    if (focusModes.includes("continuous")) {
+      advanced.push({ focusMode: "continuous" });
+    } else if (focusModes.includes("auto")) {
+      advanced.push({ focusMode: "auto" });
+    }
+
+    const exposureModes = (caps.exposureMode as string[] | undefined) ?? [];
+    if (exposureModes.includes("continuous")) {
+      advanced.push({ exposureMode: "continuous" });
+    }
+
+    const whiteBalanceModes = (caps.whiteBalanceMode as string[] | undefined) ?? [];
+    if (whiteBalanceModes.includes("continuous")) {
+      advanced.push({ whiteBalanceMode: "continuous" });
+    }
+
+    if (advanced.length === 0) return;
+    try {
+      await track.applyConstraints({ advanced } as MediaTrackConstraints);
+    } catch (e) {
+      console.warn("applyConstraints failed", e);
+    }
+  }
+
+  /** Tap-to-focus: trigger a one-shot focus on tap (Android). */
+  async function tapToFocus() {
+    const container = document.getElementById(containerId);
+    const video = container?.querySelector("video") as HTMLVideoElement | null;
+    const stream = video?.srcObject as MediaStream | null;
+    const track = stream?.getVideoTracks?.()[0];
+    if (!track) return;
+    const caps = (track.getCapabilities?.() ?? {}) as Record<string, unknown>;
+    const focusModes = (caps.focusMode as string[] | undefined) ?? [];
+    try {
+      if (focusModes.includes("single-shot")) {
+        await track.applyConstraints({
+          advanced: [{ focusMode: "single-shot" }],
+        } as MediaTrackConstraints);
+      } else if (focusModes.includes("manual")) {
+        await track.applyConstraints({
+          advanced: [{ focusMode: "manual" }, { focusMode: "continuous" }],
+        } as MediaTrackConstraints);
+      }
+    } catch (e) {
+      console.warn("tap-to-focus failed", e);
+    }
+  }
+
   async function resumeVideoPlayback() {
     setNeedsTap(false);
     const container = document.getElementById(containerId);
@@ -219,6 +284,7 @@ function ScanPage() {
       setNeedsTap(true);
     }
   }
+
 
   useEffect(() => {
     const email = getStoredEmail();
