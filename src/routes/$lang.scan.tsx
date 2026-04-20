@@ -241,7 +241,7 @@ function ScanPage() {
 
     if (advanced.length === 0) return;
     try {
-      await track.applyConstraints({ advanced } as MediaTrackConstraints);
+      await track.applyConstraints({ advanced } as unknown as MediaTrackConstraints);
     } catch (e) {
       console.warn("applyConstraints failed", e);
     }
