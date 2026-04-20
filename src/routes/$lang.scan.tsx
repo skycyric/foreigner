@@ -400,8 +400,14 @@ function ScanPage() {
 
       <div
         id={containerId}
-        onClick={needsTap ? () => void resumeVideoPlayback() : undefined}
-        className="mt-4 overflow-hidden rounded-xl border-2 border-primary bg-black"
+        onClick={() => {
+          if (needsTap) {
+            void resumeVideoPlayback();
+          } else if (scannerReady) {
+            void tapToFocus();
+          }
+        }}
+        className="mt-4 overflow-hidden rounded-xl border-2 border-primary bg-black cursor-pointer"
       />
 
       <div className="mt-3 rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
