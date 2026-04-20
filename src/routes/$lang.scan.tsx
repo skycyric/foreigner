@@ -431,7 +431,7 @@ function ScanPage() {
     function startNativeLoop(video: HTMLVideoElement, detector: NativeBarcodeDetector) {
       const SCAN_INTERVAL_MS = 200;
       const tick = () => {
-        if (cancelledRef.current || !startedRef.current) {
+        if (cancelledRef.current || !startedRef.current || blockedRef.current) {
           nativeLoopRef.current = null;
           return;
         }
