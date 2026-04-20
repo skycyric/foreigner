@@ -414,6 +414,10 @@ function ScanPage() {
         {needsTap ? t("scan.tapToResume") : statusMessage}
       </div>
 
+      {scannerReady && !needsTap && !working && (
+        <p className="mt-2 text-xs text-muted-foreground">{t("scan.tapToFocus")}</p>
+      )}
+
       {blockingError && (
         <div className="mt-4 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
           <p>{blockingError}</p>
