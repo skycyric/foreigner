@@ -57,39 +57,6 @@ function createReader(): BrowserMultiFormatReader {
   return new BrowserMultiFormatReader(hints);
 }
 
-/** Native BarcodeDetector type (not in lib.dom yet on all TS versions). */
-type NativeDetectedBarcode = { rawValue: string };
-type NativeBarcodeDetector = {
-  detect: (source: CanvasImageSource | ImageBitmapSource) => Promise<NativeDetectedBarcode[]>;
-};
-type NativeBarcodeDetectorCtor = new (opts?: { formats?: string[] }) => NativeBarcodeDetector;
-
-function getNativeDetectorCtor(): NativeBarcodeDetectorCtor | null {
-  if (typeof window === "undefined") return null;
-  const w = window as unknown as { BarcodeDetector?: NativeBarcodeDetectorCtor };
-  return w.BarcodeDetector ?? null;
-}
-
-/** Crop center 60% of video into an offscreen canvas; returns null if video not ready. */
-function cropCenterToCanvas(
-  video: HTMLVideoElement,
-  canvas: HTMLCanvasElement,
-): HTMLCanvasElement | null {
-  const vw = video.videoWidth;
-  const vh = video.videoHeight;
-  if (!vw || !vh) return null;
-  const cw = Math.floor(vw * 0.6);
-  const ch = Math.floor(vh * 0.6);
-  const sx = Math.floor((vw - cw) / 2);
-  const sy = Math.floor((vh - ch) / 2);
-  if (canvas.width !== cw) canvas.width = cw;
-  if (canvas.height !== ch) canvas.height = ch;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return null;
-  ctx.drawImage(video, sx, sy, cw, ch, 0, 0, cw, ch);
-  return canvas;
-}
-
 function ScanPage() {
   const { t } = useTranslation();
   const { lang } = useParams({ from: "/$lang/scan" });
@@ -103,22 +70,9 @@ function ScanPage() {
   const busyRef = useRef(false);
   const cancelledRef = useRef(false);
   const blockedRef = useRef(false);
-  // 視野內單次鎖定：同一張 QR 只要還在鏡頭前，就只處理一次。
-  const latchedTnRef = useRef<string | null>(null);
-  const lastDetectedAtRef = useRef(0);
-  const SCAN_LOST_RESET_MS = 800;
+  const processedTnsRef = useRef<Set<string>>(new Set());
   const restartScannerRef = useRef<null | (() => Promise<void>)>(null);
   const processDecodedTextRef = useRef<(text: string) => Promise<void>>(async () => {});
-  // Native BarcodeDetector loop refs
-  const nativeDetectorRef = useRef<NativeBarcodeDetector | null>(null);
-  const nativeLoopRef = useRef<number | null>(null);
-  const nativeCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const lastNativeScanAtRef = useRef(0);
-  // Native → ZXing 自動 fallback：native 啟動後若 NATIVE_FALLBACK_MS 內無任何命中，自動切 ZXing
-  const nativeStartedAtRef = useRef(0);
-  const lastNativeHitAtRef = useRef(0);
-  const nativeFallbackTriggeredRef = useRef(false);
-  const NATIVE_FALLBACK_MS = 5000;
   const [error, setError] = useState<string | null>(null);
   const [blockingError, setBlockingError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -131,19 +85,7 @@ function ScanPage() {
     setBusy(next);
   }, []);
 
-  const stopNativeLoop = useCallback(() => {
-    if (nativeLoopRef.current !== null) {
-      try {
-        cancelAnimationFrame(nativeLoopRef.current);
-      } catch {
-        /* ignore */
-      }
-      nativeLoopRef.current = null;
-    }
-  }, []);
-
   const stopScanner = useCallback(async () => {
-    stopNativeLoop();
     if (controlsRef.current) {
       try {
         controlsRef.current.stop();
@@ -180,13 +122,6 @@ function ScanPage() {
       }
     }
     startedRef.current = false;
-  }, [stopNativeLoop]);
-
-  const releaseLatchedTnIfLost = useCallback(() => {
-    if (!latchedTnRef.current) return;
-    if (Date.now() - lastDetectedAtRef.current > SCAN_LOST_RESET_MS) {
-      latchedTnRef.current = null;
-    }
   }, []);
 
   const processDecodedText = useCallback(
@@ -194,12 +129,12 @@ function ScanPage() {
       if (busyRef.current || cancelledRef.current || blockedRef.current) return;
 
       const tn = extractTn(decodedText);
-      lastDetectedAtRef.current = Date.now();
-      if (latchedTnRef.current === tn) return;
-      latchedTnRef.current = tn;
+      if (processedTnsRef.current.has(tn)) return;
+      processedTnsRef.current.add(tn);
 
       if (!isValidTnFormat(tn)) {
         toast.error(t("scan.invalidFormat"));
+        setTimeout(() => processedTnsRef.current.delete(tn), 1500);
         return;
       }
 
@@ -211,7 +146,6 @@ function ScanPage() {
         const email = getStoredEmail();
         if (!email) {
           navigatingAway = true;
-          blockedRef.current = true;
           navigate({ to: "/$lang/welcome", params: { lang }, replace: true });
           return;
         }
@@ -233,7 +167,6 @@ function ScanPage() {
         }
 
         navigatingAway = true;
-        blockedRef.current = true;
         await stopScanner();
         navigate({
           to: "/$lang/result",
@@ -244,6 +177,7 @@ function ScanPage() {
       } catch (e) {
         console.error(e);
         toast.error(String(e));
+        processedTnsRef.current.delete(tn);
       } finally {
         if (!navigatingAway && !cancelledRef.current) {
           setBusyState(false);
@@ -255,8 +189,7 @@ function ScanPage() {
 
   const handleRescan = useCallback(async () => {
     blockedRef.current = false;
-    latchedTnRef.current = null;
-    lastDetectedAtRef.current = 0;
+    processedTnsRef.current.clear();
     setBlockingError(null);
     setError(null);
     if (!startedRef.current) {
@@ -270,48 +203,17 @@ function ScanPage() {
 
     if (!file || busyRef.current || fileScanning) return;
 
+    const reader = readerRef.current;
+    if (!reader) return;
+
     const shouldRestart = startedRef.current;
     setFileScanning(true);
     setScannerReady(false);
     setError(null);
 
-    let url: string | null = null;
+    const url = URL.createObjectURL(file);
     try {
       await stopScanner();
-
-      // Try native BarcodeDetector first for static image
-      const NativeCtor = getNativeDetectorCtor();
-      if (NativeCtor) {
-        try {
-          const detector = new NativeCtor({ formats: ["qr_code"] });
-          const bitmap = await createImageBitmap(file);
-          try {
-            const results = await detector.detect(bitmap);
-            if (results.length > 0 && results[0].rawValue) {
-              await processDecodedText(results[0].rawValue);
-              return;
-            }
-          } finally {
-            try {
-              bitmap.close();
-            } catch {
-              /* ignore */
-            }
-          }
-        } catch (e) {
-          console.warn("[scan] native photo decode failed, falling back to zxing", e);
-        }
-      }
-
-      // Fallback to ZXing
-      const reader = readerRef.current;
-      if (!reader) {
-        const message = t("scan.uploadFailed");
-        setError(message);
-        toast.error(message);
-        return;
-      }
-      url = URL.createObjectURL(file);
       const result = await reader.decodeFromImageUrl(url);
       await processDecodedText(result.getText());
     } catch (e) {
@@ -320,7 +222,7 @@ function ScanPage() {
       setError(message);
       toast.error(message);
     } finally {
-      if (url) URL.revokeObjectURL(url);
+      URL.revokeObjectURL(url);
       if (!cancelledRef.current) {
         setFileScanning(false);
         if (!busyRef.current && shouldRestart) {
@@ -430,92 +332,8 @@ function ScanPage() {
     setError(null);
     setScannerReady(false);
 
-    // ZXing reader is always created as fallback (and used as the primary path
-    // when native BarcodeDetector is unavailable, e.g. iOS Safari).
     const reader = createReader();
     readerRef.current = reader;
-    nativeCanvasRef.current = document.createElement("canvas");
-
-    /** Start ZXing fallback decode loop on the existing video element. */
-    async function startZxingLoop(video: HTMLVideoElement) {
-      try {
-        const controls = await reader.decodeFromVideoElement(video, (result, _err, c) => {
-          if (cancelledRef.current) {
-            c.stop();
-            return;
-          }
-          if (result) {
-            void processDecodedTextRef.current(result.getText());
-          } else {
-            releaseLatchedTnIfLost();
-          }
-        });
-        controlsRef.current = controls;
-        startedRef.current = true;
-      } catch (e) {
-        console.error("[scan] zxing start failed", e);
-        if (!cancelledRef.current) {
-          setError(getCameraErrorMessage(e, t));
-        }
-      }
-    }
-
-    /** Switch from native loop to ZXing on the same active video stream. */
-    function switchToZxing(video: HTMLVideoElement, reason: string) {
-      if (nativeFallbackTriggeredRef.current) return;
-      nativeFallbackTriggeredRef.current = true;
-      console.warn(`[scan] native → zxing fallback (${reason})`);
-      stopNativeLoop();
-      nativeDetectorRef.current = null;
-      void startZxingLoop(video);
-    }
-
-    /** Native BarcodeDetector loop — feeds center-cropped frames at ~5fps. */
-    function startNativeLoop(video: HTMLVideoElement, detector: NativeBarcodeDetector) {
-      const SCAN_INTERVAL_MS = 200;
-      nativeStartedAtRef.current = performance.now();
-      lastNativeHitAtRef.current = nativeStartedAtRef.current;
-      const tick = () => {
-        if (cancelledRef.current || !startedRef.current || blockedRef.current) {
-          nativeLoopRef.current = null;
-          return;
-        }
-        const now = performance.now();
-        // 自動 fallback：啟動後 NATIVE_FALLBACK_MS 內若都沒有命中過任何 QR，切到 ZXing
-        if (
-          !nativeFallbackTriggeredRef.current &&
-          now - lastNativeHitAtRef.current > NATIVE_FALLBACK_MS
-        ) {
-          switchToZxing(video, `no hit in ${NATIVE_FALLBACK_MS}ms`);
-          return;
-        }
-        if (now - lastNativeScanAtRef.current >= SCAN_INTERVAL_MS && !busyRef.current) {
-          lastNativeScanAtRef.current = now;
-          const canvas = nativeCanvasRef.current;
-          if (canvas && video.readyState >= 2) {
-            const cropped = cropCenterToCanvas(video, canvas);
-            if (cropped) {
-              detector
-                .detect(cropped)
-                .then((results) => {
-                  if (cancelledRef.current) return;
-                  if (results.length > 0 && results[0].rawValue) {
-                    lastNativeHitAtRef.current = performance.now();
-                    void processDecodedTextRef.current(results[0].rawValue);
-                  } else {
-                    releaseLatchedTnIfLost();
-                  }
-                })
-                .catch(() => {
-                  /* per-frame errors are normal — ignore */
-                });
-            }
-          }
-        }
-        nativeLoopRef.current = requestAnimationFrame(tick);
-      };
-      nativeLoopRef.current = requestAnimationFrame(tick);
-    }
 
     async function startScanner() {
       if (cancelledRef.current || busyRef.current) return;
@@ -525,7 +343,6 @@ function ScanPage() {
 
       setError(null);
       setScannerReady(false);
-      nativeFallbackTriggeredRef.current = false;
 
       try {
         // 先 enumerate 找出 back camera；找不到就讓 ZXing 用 facingMode environment 預設
@@ -540,19 +357,19 @@ function ScanPage() {
           /* ignore — fallback to facingMode */
         }
 
-        // 1080p ideal — S24 等高解析感測器需要更多細節保留紙本 QR
+        // 720p 比 1080p 解碼快很多（每幀像素少 2.25 倍），對 QR 碼足夠
         const constraints: MediaStreamConstraints = {
           video: deviceId
             ? {
                 deviceId: { exact: deviceId },
-                width: { ideal: 1920, min: 1280 },
-                height: { ideal: 1080, min: 720 },
+                width: { ideal: 1280, min: 960 },
+                height: { ideal: 720, min: 540 },
                 frameRate: { ideal: 30, min: 24 },
               }
             : {
                 facingMode: { ideal: "environment" },
-                width: { ideal: 1920, min: 1280 },
-                height: { ideal: 1080, min: 720 },
+                width: { ideal: 1280, min: 960 },
+                height: { ideal: 720, min: 540 },
                 frameRate: { ideal: 30, min: 24 },
               },
           audio: false,
@@ -577,26 +394,20 @@ function ScanPage() {
           setNeedsTap(true);
         }
 
-        // 三層分流：Tier 1 native BarcodeDetector（S24 / 新 Android Chrome）
-        // → Tier 2 @zxing/browser（iOS Safari / 舊瀏覽器 / native 5s 沒命中）
-        const NativeCtor = getNativeDetectorCtor();
-        if (NativeCtor) {
-          try {
-            const detector = new NativeCtor({ formats: ["qr_code"] });
-            nativeDetectorRef.current = detector;
-            startedRef.current = true;
-            console.info("[scan] decoder = native BarcodeDetector");
-            startNativeLoop(video, detector);
-          } catch (e) {
-            console.warn("[scan] native BarcodeDetector init failed, using zxing", e);
-            nativeDetectorRef.current = null;
+        // ZXing 持續從 <video> 元素抓 frame 解碼
+        const controls = await reader.decodeFromVideoElement(video, (result, err, c) => {
+          if (cancelledRef.current) {
+            c.stop();
+            return;
           }
-        }
+          if (result) {
+            void processDecodedTextRef.current(result.getText());
+          }
+          // err 多半是 NotFoundException（每幀沒掃到），忽略即可
+        });
 
-        if (!nativeDetectorRef.current) {
-          console.info("[scan] decoder = zxing");
-          await startZxingLoop(video);
-        }
+        controlsRef.current = controls;
+        startedRef.current = true;
 
         if (!cancelledRef.current) {
           void applyAdvancedTrackConstraints();
@@ -611,8 +422,6 @@ function ScanPage() {
     }
 
     restartScannerRef.current = startScanner;
-    latchedTnRef.current = null;
-    lastDetectedAtRef.current = 0;
     void startScanner();
 
     function handleVisibilityChange() {
@@ -626,10 +435,6 @@ function ScanPage() {
       cancelledRef.current = true;
       restartScannerRef.current = null;
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-
-      // 停掉 native loop
-      stopNativeLoop();
-      nativeDetectorRef.current = null;
 
       // 停掉 ZXing controls
       if (controlsRef.current) {
@@ -656,7 +461,6 @@ function ScanPage() {
         video.srcObject = null;
       }
       readerRef.current = null;
-      nativeCanvasRef.current = null;
       startedRef.current = false;
     };
     // 只依賴 lang — processDecodedText / t / navigate 透過 ref 取最新值，
@@ -664,7 +468,7 @@ function ScanPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang]);
 
-  // 把最新的 processDecodedText 同步到 ref，給 ZXing / native callback 用
+  // 把最新的 processDecodedText 同步到 ref，給 ZXing callback 用
   useEffect(() => {
     processDecodedTextRef.current = processDecodedText;
   }, [processDecodedText]);
@@ -698,7 +502,7 @@ function ScanPage() {
           muted
           autoPlay
         />
-        {/* 視覺引導框 — 對應 native loop 裁切的中央 60% ROI */}
+        {/* 視覺引導框 — 不影響解碼 */}
         {scannerReady && !needsTap && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
             <div className="h-3/5 w-3/5 rounded-lg border-2 border-white/70 shadow-[0_0_0_9999px_rgba(0,0,0,0.25)]" />
