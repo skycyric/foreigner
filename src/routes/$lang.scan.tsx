@@ -58,6 +58,11 @@ function ScanPage() {
   const [fileScanning, setFileScanning] = useState(false);
   const [scannerReady, setScannerReady] = useState(false);
   const [needsTap, setNeedsTap] = useState(false);
+  const [zoomSupported, setZoomSupported] = useState(false);
+  const [zoomMax, setZoomMax] = useState(1);
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [torchSupported, setTorchSupported] = useState(false);
+  const [torchOn, setTorchOn] = useState(false);
 
   const setBusyState = useCallback((next: boolean) => {
     busyRef.current = next;
