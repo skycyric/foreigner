@@ -114,6 +114,11 @@ function ScanPage() {
   const nativeLoopRef = useRef<number | null>(null);
   const nativeCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const lastNativeScanAtRef = useRef(0);
+  // Native → ZXing 自動 fallback：native 啟動後若 NATIVE_FALLBACK_MS 內無任何命中，自動切 ZXing
+  const nativeStartedAtRef = useRef(0);
+  const lastNativeHitAtRef = useRef(0);
+  const nativeFallbackTriggeredRef = useRef(false);
+  const NATIVE_FALLBACK_MS = 5000;
   const [error, setError] = useState<string | null>(null);
   const [blockingError, setBlockingError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
