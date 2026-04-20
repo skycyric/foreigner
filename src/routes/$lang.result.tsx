@@ -56,14 +56,14 @@ function ResultPage() {
         <Button
           size="lg"
           className="h-14 w-full font-medium"
-          onClick={() => navigate({ to: "/$lang/coupons", params: { lang }, replace: true })}
+          onClick={() => navigate({ to: "/$lang/scan", params: { lang }, replace: true })}
         >
           {t("result.again")}
         </Button>
         <Button
           variant="ghost"
           className="w-full"
-          onClick={() => navigate({ to: "/$lang", params: { lang }, replace: true })}
+          onClick={() => navigate({ to: "/$lang/coupons", params: { lang }, replace: true })}
         >
           {t("result.home")}
         </Button>
