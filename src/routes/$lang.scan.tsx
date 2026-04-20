@@ -395,7 +395,7 @@ function ScanPage() {
         }
 
         // ZXing 持續從 <video> 元素抓 frame 解碼
-        const controls = await reader.decodeFromVideoElement(video, (result, err, c) => {
+        const controls = await reader.decodeFromConstraints(constraints, video, (result, err, c) => {
           if (cancelledRef.current) {
             c.stop();
             return;
