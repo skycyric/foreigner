@@ -94,18 +94,6 @@ export const api = {
     return (data ?? []) as Coupon[];
   },
 
-  /** Check if this TN has already been registered (unique per system). */
-  async lookupTransaction(input: { tn: string }): Promise<LookupResult> {
-    if (USE_REMOTE_API) {
-      return remote(`/lottery/lookup?tn=${encodeURIComponent(input.tn)}`);
-    }
-    const { data: entry } = await supabase
-      .from("lottery_entries")
-      .select("id")
-      .eq("tn_number", input.tn)
-      .maybeSingle();
-    return { alreadyUsed: !!entry };
-  },
 
   async submitLotteryEntry(input: {
     tn: string;
