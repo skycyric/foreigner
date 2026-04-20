@@ -49,13 +49,15 @@ function getCameraErrorMessage(error: unknown, t: (key: string) => string): stri
   return t("scan.startFailed");
 }
 
-/** Build ZXing reader — QR-only + TRY_HARDER, throttle to 5 fps for paper scans. */
+/** Build ZXing reader — QR-only + TRY_HARDER, throttle to ~5 fps for paper scans. */
 function createReader(): BrowserMultiFormatReader {
   const hints = new Map();
   hints.set(DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.QR_CODE]);
   hints.set(DecodeHintType.TRY_HARDER, true);
-  // 200ms 間隔（5fps）對紙本 QR 完全夠，CPU 大降
-  return new BrowserMultiFormatReader(hints, undefined, 200);
+  const reader = new BrowserMultiFormatReader(hints);
+  // 200ms 間隔（~5fps）對紙本 QR 完全夠，CPU 大降
+  (reader as unknown as { timeBetweenScansMillis: number }).timeBetweenScansMillis = 200;
+  return reader;
 }
 
 /**
