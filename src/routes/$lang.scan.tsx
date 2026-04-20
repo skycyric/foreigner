@@ -62,6 +62,7 @@ function ScanPage() {
   const blockedRef = useRef(false);
   const processedTnsRef = useRef<Set<string>>(new Set());
   const restartScannerRef = useRef<null | (() => Promise<void>)>(null);
+  const processDecodedTextRef = useRef<(text: string) => Promise<void>>(async () => {});
   const [error, setError] = useState<string | null>(null);
   const [blockingError, setBlockingError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -417,7 +418,7 @@ function ScanPage() {
             return;
           }
           if (result) {
-            void processDecodedText(result.getText());
+            void processDecodedTextRef.current(result.getText());
           }
           // err 多半是 NotFoundException（每幀沒掃到），忽略即可
         });
@@ -471,7 +472,15 @@ function ScanPage() {
       readerRef.current = null;
       startedRef.current = false;
     };
-  }, [lang, navigate, processDecodedText, t]);
+    // 只依賴 lang — processDecodedText / t / navigate 透過 ref 取最新值，
+    // 避免語言切換或 callback 重建造成 scanner 重啟。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang]);
+
+  // 把最新的 processDecodedText 同步到 ref，給 ZXing callback 用
+  useEffect(() => {
+    processDecodedTextRef.current = processDecodedText;
+  }, [processDecodedText]);
 
   const working = busy || fileScanning;
   const statusMessage = working
