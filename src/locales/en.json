@@ -46,6 +46,7 @@
     "paperHint": "Paper tip: hold 10–20 cm away, avoid glare, turn on the torch or zoom in.",
     "zoom": "Zoom",
     "torch": "Torch",
+    "invalidFormat": "Invalid QR code format — this does not look like a receipt number.",
     "rescan": "Scan again",
     "back": "Back"
   },
