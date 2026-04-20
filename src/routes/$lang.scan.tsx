@@ -182,12 +182,14 @@ function ScanPage() {
       if (busyRef.current || cancelledRef.current || blockedRef.current) return;
 
       const tn = extractTn(decodedText);
-      if (processedTnsRef.current.has(tn)) return;
-      processedTnsRef.current.add(tn);
+      const now = Date.now();
+      const expiresAt = tnCooldownRef.current.get(tn);
+      if (expiresAt && expiresAt > now) return;
+      // 先放入冷卻名單，避免 native loop 下一幀又進來
+      tnCooldownRef.current.set(tn, now + TN_COOLDOWN_MS);
 
       if (!isValidTnFormat(tn)) {
         toast.error(t("scan.invalidFormat"));
-        setTimeout(() => processedTnsRef.current.delete(tn), 1500);
         return;
       }
 
@@ -199,6 +201,7 @@ function ScanPage() {
         const email = getStoredEmail();
         if (!email) {
           navigatingAway = true;
+          blockedRef.current = true;
           navigate({ to: "/$lang/welcome", params: { lang }, replace: true });
           return;
         }
@@ -219,7 +222,9 @@ function ScanPage() {
           return;
         }
 
+        // 成功：先 block 再 navigate，避免 router 卸載前殘餘幀又進入
         navigatingAway = true;
+        blockedRef.current = true;
         await stopScanner();
         navigate({
           to: "/$lang/result",
@@ -230,7 +235,7 @@ function ScanPage() {
       } catch (e) {
         console.error(e);
         toast.error(String(e));
-        processedTnsRef.current.delete(tn);
+        // 失敗時保留冷卻，避免下一幀立刻重撞同個 TN
       } finally {
         if (!navigatingAway && !cancelledRef.current) {
           setBusyState(false);
@@ -242,7 +247,7 @@ function ScanPage() {
 
   const handleRescan = useCallback(async () => {
     blockedRef.current = false;
-    processedTnsRef.current.clear();
+    tnCooldownRef.current.clear();
     setBlockingError(null);
     setError(null);
     if (!startedRef.current) {
