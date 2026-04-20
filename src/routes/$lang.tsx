@@ -1,14 +1,13 @@
 import { createFileRoute, Outlet, notFound } from "@tanstack/react-router";
 import { useLayoutEffect } from "react";
-import i18n, { isSupportedLang, storeLang } from "@/lib/i18n";
+import i18n, { ensureLangLoaded, isSupportedLang, storeLang } from "@/lib/i18n";
 
 export const Route = createFileRoute("/$lang")({
-  beforeLoad: ({ params }) => {
+  beforeLoad: async ({ params }) => {
     if (!isSupportedLang(params.lang)) throw notFound();
-    // Synchronously set language on BOTH server and client before rendering,
-    // so SSR HTML matches the client's first render (avoids hydration mismatch).
+    // 動態載入該語言的 bundle（zh 已內建，立即解析）
+    await ensureLangLoaded(params.lang);
     if (i18n.language !== params.lang) {
-      // changeLanguage is sync when resources are already loaded (they are bundled).
       i18n.changeLanguage(params.lang);
     }
   },
@@ -18,8 +17,6 @@ export const Route = createFileRoute("/$lang")({
 function LangLayout() {
   const { lang } = Route.useParams();
 
-  // Sync side effects only — do NOT mutate i18n during render to avoid
-  // hydration mismatches.
   useLayoutEffect(() => {
     if (i18n.language !== lang) {
       i18n.changeLanguage(lang);
