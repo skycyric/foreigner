@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useParams, useSearch } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { PageShell } from "@/components/Header";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ function ResultPage() {
   const { t } = useTranslation();
   const { lang } = useParams({ from: "/$lang/result" });
   const { tn } = useSearch({ from: "/$lang/result" });
+  const navigate = useNavigate();
 
   return (
     <PageShell>
@@ -33,11 +34,19 @@ function ResultPage() {
       </div>
 
       <div className="mt-8 space-y-2">
-        <Button asChild size="lg" className="h-14 w-full font-semibold">
-          <Link to="/$lang/coupons" params={{ lang }}>{t("result.again")}</Link>
+        <Button
+          size="lg"
+          className="h-14 w-full font-semibold"
+          onClick={() => navigate({ to: "/$lang/coupons", params: { lang }, replace: true })}
+        >
+          {t("result.again")}
         </Button>
-        <Button asChild variant="ghost" className="w-full">
-          <Link to="/$lang" params={{ lang }}>{t("result.home")}</Link>
+        <Button
+          variant="ghost"
+          className="w-full"
+          onClick={() => navigate({ to: "/$lang", params: { lang }, replace: true })}
+        >
+          {t("result.home")}
         </Button>
       </div>
     </PageShell>
