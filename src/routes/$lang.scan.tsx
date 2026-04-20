@@ -329,20 +329,20 @@ function ScanPage() {
           /* ignore — fallback to facingMode */
         }
 
-        // 先用高解析 getUserMedia 取得 stream，再交給 ZXing 解碼
+        // 720p 比 1080p 解碼快很多（每幀像素少 2.25 倍），對 QR 碼足夠
         const constraints: MediaStreamConstraints = {
           video: deviceId
             ? {
                 deviceId: { exact: deviceId },
-                width: { ideal: 1920, min: 1280 },
-                height: { ideal: 1080, min: 720 },
-                frameRate: { ideal: 30, min: 15 },
+                width: { ideal: 1280, min: 960 },
+                height: { ideal: 720, min: 540 },
+                frameRate: { ideal: 30, min: 24 },
               }
             : {
                 facingMode: { ideal: "environment" },
-                width: { ideal: 1920, min: 1280 },
-                height: { ideal: 1080, min: 720 },
-                frameRate: { ideal: 30, min: 15 },
+                width: { ideal: 1280, min: 960 },
+                height: { ideal: 720, min: 540 },
+                frameRate: { ideal: 30, min: 24 },
               },
           audio: false,
         };
