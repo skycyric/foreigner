@@ -64,6 +64,7 @@ function ScanPage() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const readerRef = useRef<BrowserMultiFormatReader | null>(null);
   const controlsRef = useRef<IScannerControls | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const startedRef = useRef(false);
   const busyRef = useRef(false);
@@ -93,9 +94,8 @@ function ScanPage() {
       }
       controlsRef.current = null;
     }
-    // 同步停掉 video stream 的所有 tracks，立刻熄掉相機指示燈
-    const video = videoRef.current;
-    const stream = video?.srcObject as MediaStream | null;
+    // 用獨立 streamRef 確保一定能停到 tracks（不依賴 videoRef，可能已被 React unmount 清掉）
+    const stream = streamRef.current;
     if (stream) {
       stream.getTracks().forEach((tr) => {
         try {
@@ -104,7 +104,22 @@ function ScanPage() {
           /* ignore */
         }
       });
-      if (video) video.srcObject = null;
+      streamRef.current = null;
+    }
+    const video = videoRef.current;
+    if (video && video.srcObject) {
+      try {
+        video.pause();
+      } catch {
+        /* ignore */
+      }
+      video.srcObject = null;
+      try {
+        video.removeAttribute("src");
+        video.load();
+      } catch {
+        /* ignore */
+      }
     }
     startedRef.current = false;
   }, []);
@@ -366,6 +381,7 @@ function ScanPage() {
           return;
         }
 
+        streamRef.current = stream;
         video.srcObject = stream;
         video.setAttribute("playsinline", "true");
         video.setAttribute("webkit-playsinline", "true");
@@ -429,12 +445,20 @@ function ScanPage() {
         }
         controlsRef.current = null;
       }
-      // 停掉 video stream（torch 會跟著熄）
-      const video = videoRef.current;
-      const stream = video?.srcObject as MediaStream | null;
+      // 停掉 video stream（torch 會跟著熄）— 用 streamRef 確保即使 videoRef 已清空也能停
+      const stream = streamRef.current;
       if (stream) {
         stream.getTracks().forEach((t) => t.stop());
-        if (video) video.srcObject = null;
+        streamRef.current = null;
+      }
+      const video = videoRef.current;
+      if (video) {
+        try {
+          video.pause();
+        } catch {
+          /* ignore */
+        }
+        video.srcObject = null;
       }
       readerRef.current = null;
       startedRef.current = false;
