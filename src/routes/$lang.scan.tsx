@@ -202,17 +202,15 @@ function ScanPage() {
     }
   }
 
-  /**
-   * Apply advanced video constraints (continuous focus, exposure, higher
-   * resolution) after the stream starts. Many Android devices ignore these
-   * inside the initial getUserMedia constraints but accept them via
-   * applyConstraints on the live track.
-   */
-  async function applyAdvancedTrackConstraints() {
+  function getActiveVideoTrack(): MediaStreamTrack | null {
     const container = document.getElementById(containerId);
     const video = container?.querySelector("video") as HTMLVideoElement | null;
     const stream = video?.srcObject as MediaStream | null;
-    const track = stream?.getVideoTracks?.()[0];
+    return stream?.getVideoTracks?.()[0] ?? null;
+  }
+
+  async function applyAdvancedTrackConstraints() {
+    const track = getActiveVideoTrack();
     if (!track) return;
 
     const caps = (track.getCapabilities?.() ?? {}) as Record<string, unknown>;
@@ -235,20 +233,77 @@ function ScanPage() {
       advanced.push({ whiteBalanceMode: "continuous" });
     }
 
-    if (advanced.length === 0) return;
-    try {
-      await track.applyConstraints({ advanced } as unknown as MediaTrackConstraints);
-    } catch (e) {
-      console.warn("applyConstraints failed", e);
+    // Paper QR is usually 10–20cm — bias focus distance to near if supported.
+    const focusDistance = caps.focusDistance as
+      | { min?: number; max?: number; step?: number }
+      | undefined;
+    if (focusDistance && typeof focusDistance.min === "number") {
+      // Smaller focusDistance = closer focus on most Android devices.
+      advanced.push({ focusDistance: focusDistance.min });
+    }
+
+    if (advanced.length > 0) {
+      try {
+        await track.applyConstraints({ advanced } as unknown as MediaTrackConstraints);
+      } catch (e) {
+        console.warn("applyConstraints failed", e);
+      }
+    }
+
+    // Detect zoom / torch capability for the toolbar
+    const zoomCap = caps.zoom as { min?: number; max?: number; step?: number } | undefined;
+    if (zoomCap && typeof zoomCap.max === "number" && zoomCap.max > 1) {
+      setZoomSupported(true);
+      setZoomMax(zoomCap.max);
+      setZoomLevel(1);
+    } else {
+      setZoomSupported(false);
+    }
+    if ((caps as { torch?: boolean }).torch) {
+      setTorchSupported(true);
+      setTorchOn(false);
+    } else {
+      setTorchSupported(false);
     }
   }
 
-  /** Tap-to-focus: trigger a one-shot focus on tap (Android). */
+  async function applyZoom(next: number) {
+    const track = getActiveVideoTrack();
+    if (!track) return;
+    try {
+      await track.applyConstraints({
+        advanced: [{ zoom: next }],
+      } as unknown as MediaTrackConstraints);
+      setZoomLevel(next);
+    } catch (e) {
+      console.warn("zoom failed", e);
+    }
+  }
+
+  async function toggleZoom() {
+    if (!zoomSupported) return;
+    // Cycle 1x → 2x → max → 1x (cap 2x against zoomMax)
+    const target = zoomLevel === 1 ? Math.min(2, zoomMax) : zoomLevel < zoomMax ? zoomMax : 1;
+    await applyZoom(target);
+  }
+
+  async function toggleTorch() {
+    const track = getActiveVideoTrack();
+    if (!track) return;
+    const next = !torchOn;
+    try {
+      await track.applyConstraints({
+        advanced: [{ torch: next }],
+      } as unknown as MediaTrackConstraints);
+      setTorchOn(next);
+    } catch (e) {
+      console.warn("torch toggle failed", e);
+    }
+  }
+
+  /** Tap-to-focus: trigger one-shot focus then return to continuous. */
   async function tapToFocus() {
-    const container = document.getElementById(containerId);
-    const video = container?.querySelector("video") as HTMLVideoElement | null;
-    const stream = video?.srcObject as MediaStream | null;
-    const track = stream?.getVideoTracks?.()[0];
+    const track = getActiveVideoTrack();
     if (!track) return;
     const caps = (track.getCapabilities?.() ?? {}) as Record<string, unknown>;
     const focusModes = (caps.focusMode as string[] | undefined) ?? [];
@@ -259,11 +314,21 @@ function ScanPage() {
         } as unknown as MediaTrackConstraints);
       } else if (focusModes.includes("manual")) {
         await track.applyConstraints({
-          advanced: [{ focusMode: "manual" }, { focusMode: "continuous" }],
+          advanced: [{ focusMode: "manual" }],
         } as unknown as MediaTrackConstraints);
       }
     } catch (e) {
       console.warn("tap-to-focus failed", e);
+    }
+    // Restore continuous focus so subsequent frames stay sharp.
+    if (focusModes.includes("continuous")) {
+      try {
+        await track.applyConstraints({
+          advanced: [{ focusMode: "continuous" }],
+        } as unknown as MediaTrackConstraints);
+      } catch {
+        /* ignore */
+      }
     }
   }
 
