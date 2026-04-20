@@ -177,16 +177,21 @@ function ScanPage() {
     startedRef.current = false;
   }, [stopNativeLoop]);
 
+  const releaseLatchedTnIfLost = useCallback(() => {
+    if (!latchedTnRef.current) return;
+    if (Date.now() - lastDetectedAtRef.current > SCAN_LOST_RESET_MS) {
+      latchedTnRef.current = null;
+    }
+  }, []);
+
   const processDecodedText = useCallback(
     async (decodedText: string) => {
       if (busyRef.current || cancelledRef.current || blockedRef.current) return;
 
       const tn = extractTn(decodedText);
-      const now = Date.now();
-      const expiresAt = tnCooldownRef.current.get(tn);
-      if (expiresAt && expiresAt > now) return;
-      // 先放入冷卻名單，避免 native loop 下一幀又進來
-      tnCooldownRef.current.set(tn, now + TN_COOLDOWN_MS);
+      lastDetectedAtRef.current = Date.now();
+      if (latchedTnRef.current === tn) return;
+      latchedTnRef.current = tn;
 
       if (!isValidTnFormat(tn)) {
         toast.error(t("scan.invalidFormat"));
@@ -222,7 +227,6 @@ function ScanPage() {
           return;
         }
 
-        // 成功：先 block 再 navigate，避免 router 卸載前殘餘幀又進入
         navigatingAway = true;
         blockedRef.current = true;
         await stopScanner();
@@ -235,7 +239,6 @@ function ScanPage() {
       } catch (e) {
         console.error(e);
         toast.error(String(e));
-        // 失敗時保留冷卻，避免下一幀立刻重撞同個 TN
       } finally {
         if (!navigatingAway && !cancelledRef.current) {
           setBusyState(false);
@@ -247,7 +250,8 @@ function ScanPage() {
 
   const handleRescan = useCallback(async () => {
     blockedRef.current = false;
-    tnCooldownRef.current.clear();
+    latchedTnRef.current = null;
+    lastDetectedAtRef.current = 0;
     setBlockingError(null);
     setError(null);
     if (!startedRef.current) {
