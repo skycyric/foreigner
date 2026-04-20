@@ -477,33 +477,6 @@ function ScanPage() {
         {needsTap ? t("scan.tapToResume") : statusMessage}
       </div>
 
-      {(zoomSupported || torchSupported) && scannerReady && !needsTap && (
-        <div className="mt-2 flex flex-wrap gap-2">
-          {zoomSupported && (
-            <Button
-              type="button"
-              variant={zoomLevel > 1 ? "default" : "outline"}
-              size="sm"
-              onClick={() => void toggleZoom()}
-              disabled={working}
-            >
-              {t("scan.zoom")} {zoomLevel.toFixed(zoomLevel % 1 === 0 ? 0 : 1)}x
-            </Button>
-          )}
-          {torchSupported && (
-            <Button
-              type="button"
-              variant={torchOn ? "default" : "outline"}
-              size="sm"
-              onClick={() => void toggleTorch()}
-              disabled={working}
-            >
-              {t("scan.torch")}{torchOn ? " ✓" : ""}
-            </Button>
-          )}
-        </div>
-      )}
-
       {scannerReady && !needsTap && !working && (
         <>
           <p className="mt-2 text-xs text-muted-foreground">{t("scan.tapToFocus")}</p>
@@ -511,20 +484,19 @@ function ScanPage() {
         </>
       )}
 
-      {blockingError && (
-        <div className="mt-4 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
-          <p>{blockingError}</p>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="mt-2"
-            onClick={() => void handleRescan()}
-          >
-            {t("scan.rescan")}
-          </Button>
-        </div>
-      )}
+      <AlertDialog open={!!blockingError}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("scan.rescanTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{blockingError}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => void handleRescan()}>
+              {t("scan.rescan")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {error && !blockingError && (
         <div className="mt-4 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
