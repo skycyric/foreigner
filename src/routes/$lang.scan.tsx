@@ -103,10 +103,10 @@ function ScanPage() {
   const busyRef = useRef(false);
   const cancelledRef = useRef(false);
   const blockedRef = useRef(false);
-  // tn → cooldown expiresAt (ms epoch). 期限內不會重複處理同一個 TN，
-  // 避免 native loop 200ms 命中後同筆 QR 反覆觸發 → busy 閃爍。
-  const tnCooldownRef = useRef<Map<string, number>>(new Map());
-  const TN_COOLDOWN_MS = 1500;
+  // 視野內單次鎖定：同一張 QR 只要還在鏡頭前，就只處理一次。
+  const latchedTnRef = useRef<string | null>(null);
+  const lastDetectedAtRef = useRef(0);
+  const SCAN_LOST_RESET_MS = 800;
   const restartScannerRef = useRef<null | (() => Promise<void>)>(null);
   const processDecodedTextRef = useRef<(text: string) => Promise<void>>(async () => {});
   // Native BarcodeDetector loop refs
@@ -177,16 +177,21 @@ function ScanPage() {
     startedRef.current = false;
   }, [stopNativeLoop]);
 
+  const releaseLatchedTnIfLost = useCallback(() => {
+    if (!latchedTnRef.current) return;
+    if (Date.now() - lastDetectedAtRef.current > SCAN_LOST_RESET_MS) {
+      latchedTnRef.current = null;
+    }
+  }, []);
+
   const processDecodedText = useCallback(
     async (decodedText: string) => {
       if (busyRef.current || cancelledRef.current || blockedRef.current) return;
 
       const tn = extractTn(decodedText);
-      const now = Date.now();
-      const expiresAt = tnCooldownRef.current.get(tn);
-      if (expiresAt && expiresAt > now) return;
-      // 先放入冷卻名單，避免 native loop 下一幀又進來
-      tnCooldownRef.current.set(tn, now + TN_COOLDOWN_MS);
+      lastDetectedAtRef.current = Date.now();
+      if (latchedTnRef.current === tn) return;
+      latchedTnRef.current = tn;
 
       if (!isValidTnFormat(tn)) {
         toast.error(t("scan.invalidFormat"));
@@ -222,7 +227,6 @@ function ScanPage() {
           return;
         }
 
-        // 成功：先 block 再 navigate，避免 router 卸載前殘餘幀又進入
         navigatingAway = true;
         blockedRef.current = true;
         await stopScanner();
@@ -235,7 +239,6 @@ function ScanPage() {
       } catch (e) {
         console.error(e);
         toast.error(String(e));
-        // 失敗時保留冷卻，避免下一幀立刻重撞同個 TN
       } finally {
         if (!navigatingAway && !cancelledRef.current) {
           setBusyState(false);
@@ -247,7 +250,8 @@ function ScanPage() {
 
   const handleRescan = useCallback(async () => {
     blockedRef.current = false;
-    tnCooldownRef.current.clear();
+    latchedTnRef.current = null;
+    lastDetectedAtRef.current = 0;
     setBlockingError(null);
     setError(null);
     if (!startedRef.current) {
@@ -448,6 +452,8 @@ function ScanPage() {
                   if (cancelledRef.current) return;
                   if (results.length > 0 && results[0].rawValue) {
                     void processDecodedTextRef.current(results[0].rawValue);
+                  } else {
+                    releaseLatchedTnIfLost();
                   }
                 })
                 .catch(() => {
@@ -546,6 +552,8 @@ function ScanPage() {
             }
             if (result) {
               void processDecodedTextRef.current(result.getText());
+            } else {
+              releaseLatchedTnIfLost();
             }
           });
           controlsRef.current = controls;
@@ -565,6 +573,8 @@ function ScanPage() {
     }
 
     restartScannerRef.current = startScanner;
+    latchedTnRef.current = null;
+    lastDetectedAtRef.current = 0;
     void startScanner();
 
     function handleVisibilityChange() {
