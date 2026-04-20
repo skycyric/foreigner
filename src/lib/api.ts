@@ -144,6 +144,9 @@ export const api = {
       }
       throw error;
     }
+    if (!data?.id) {
+      throw new Error("LOTTERY_ENTRY_INSERT_FAILED");
+    }
     return { id: data.id };
   },
 
