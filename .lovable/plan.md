@@ -1,54 +1,48 @@
 
+使用者在 Cloud view 的 participants 表想刪除幾筆資料，但 UI 產生的 SQL 用了 `id` 欄位 — 而我們的 `participants` 表主鍵是 `email`，根本沒有 `id` 欄位（schema 確認：只有 email / device_id / language / created_at / updated_at）。
 
-## 修正 Android 掃描速度 + 測試模式失效
+這不是程式 bug，是 Lovable Cloud 內建表格 UI 預設用 `id` 當識別欄，但我們刻意用 `email` 當主鍵（避免 auth.users FK 限制）。所以那個刪除按鈕對 participants 表不適用。
 
-### 問題 1：Android 相機掃描慢
+## 解法選項
 
-可能原因（需看 scan.tsx 確認）：
-- `@yudiel/react-qr-scanner` 預設 scan delay 較保守
-- 沒指定後鏡頭 / 解析度過高導致每幀處理變慢
-- constraints 沒鎖定 `facingMode: environment` 或解析度
-
-### 問題 2：測試 QR code 一直顯示「已掃過」
-
-可能原因：
-1. **`IS_TEST_MODE` 在 published 環境是 false** — 目前用 `import.meta.env.DEV`，但 published preview / production build 都是 false，所以 TN 不會加時間戳，第二次掃就被 unique constraint 擋掉
-2. user 現在在 `id-preview--*.lovable.app`（published preview），不是 dev server，所以測試模式根本沒啟用
-
-從 console 看到 `index-CTRb1Dr1.js`（minified bundle）→ 確認是 production build，`import.meta.env.DEV = false`。
-
-### 修正方案
-
-**1. 改 `src/lib/test-mode.ts` — 用更可靠的判斷**
-
-改用 hostname 判斷，preview / lovableproject 環境都算測試：
-```ts
-export const IS_TEST_MODE =
-  import.meta.env.DEV ||
-  (typeof window !== "undefined" &&
-    /lovable(project)?\.app$/.test(window.location.hostname));
+**選項 A — 手動 SQL 刪除（建議，最快）**
+直接在 Cloud → SQL Editor 執行：
+```sql
+DELETE FROM participants WHERE email IN ('test1@example.com', 'test2@example.com');
+```
+或用條件批次清測試資料：
+```sql
+DELETE FROM participants WHERE email LIKE '%test%';
+```
+注意 coupons / lottery_entries 有 FK 指向 participants.email，需要先清子表，或者改用 CASCADE：
+```sql
+DELETE FROM lottery_entries WHERE email = 'xxx@example.com';
+DELETE FROM coupons WHERE email = 'xxx@example.com';
+DELETE FROM participants WHERE email = 'xxx@example.com';
 ```
 
-正式網域（例如自訂 domain 或 `foreigner.lovable.app` published 上線後）只要不在白名單就會自動關掉。
+**選項 B — 加一個 id 欄位讓 UI 能用**
+新增 `id uuid default gen_random_uuid()` 欄位（保留 email 為 unique）。代價：
+- 要寫一支 migration
+- 程式碼還是用 email 做關聯，新欄位純粹只為了讓 Cloud UI 的刪除鈕能動
+- 多一欄沒實質用途的資料
 
-> 補充：若希望 `foreigner.lovable.app`（published 正式網址）也關掉測試模式，會排除 `foreigner.lovable.app`，只允許 `*-preview--*.lovable.app` 與 `lovableproject.com`。會在 plan 確認後實作。
+**選項 C — 都不動，未來都用 SQL Editor 處理 participants**
+告知此 UI 限制，之後刪 participants 都走 SQL。
 
-**2. 加快 Android 掃描（`src/routes/$lang.scan.tsx`）**
+## 我的建議
 
-需先 view 檔案確認目前 props，預期調整：
-- `scanDelay={100}` （或更低，預設常是 500ms）
-- `constraints={{ facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } }}` — 鎖定後鏡頭 + 720p（過高解析會拖慢解碼）
-- 確認 `formats={["qr_code"]}` 限制只解 QR（如果套件支援）
+走 **選項 A**：用 SQL 刪除，因為：
+1. 一次性需求，不值得改 schema
+2. 加 id 欄位純粹為了遷就 UI，會讓 schema 變複雜
+3. 你之後正式上線清測試資料時，本來就建議用 SQL（更精準、可附條件）
 
-**3. SSR hydration 注意**
+如果你常常要刪測試資料，我可以幫你在後台加一個簡單的 admin 頁面，這比改 schema 更乾淨。
 
-`window.location.hostname` 在 SSR 會炸 → 已用 `typeof window !== "undefined"` 守衛，SSR 時回傳 false，client hydrate 後才變 true。這對 TN 提交沒影響（提交一定在 client 端發生）。
+## 要我幫你做什麼
 
-### 檔案影響
-- 修改：`src/lib/test-mode.ts`、`src/routes/$lang.scan.tsx`
-- 不動 DB、不動 docs（PRODUCTION_CHECKLIST 仍適用）
+請告訴我你想刪哪幾筆 participants（提供 email），我可以：
+1. 直接幫你執行對應的 DELETE SQL（包含先清 coupons / lottery_entries 子表）
+2. 或者你自己去 Cloud → SQL Editor 貼上面的 SQL 執行
 
-### 風險
-- 測試模式判斷改寬後，preview 網域的所有掃描資料都會帶 `__t` 後綴 → 上線清理 SQL 一樣可清乾淨，符合既有 checklist
-- 掃描速度調快若造成誤判，可回調 `scanDelay`
-
+如果你選 1，請貼上要刪的 email；如果你想批次清所有測試資料（例如某 prefix），也告訴我規則。
