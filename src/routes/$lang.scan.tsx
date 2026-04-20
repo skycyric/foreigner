@@ -475,8 +475,38 @@ function ScanPage() {
         {needsTap ? t("scan.tapToResume") : statusMessage}
       </div>
 
+      {(zoomSupported || torchSupported) && scannerReady && !needsTap && (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {zoomSupported && (
+            <Button
+              type="button"
+              variant={zoomLevel > 1 ? "default" : "outline"}
+              size="sm"
+              onClick={() => void toggleZoom()}
+              disabled={working}
+            >
+              {t("scan.zoom")} {zoomLevel.toFixed(zoomLevel % 1 === 0 ? 0 : 1)}x
+            </Button>
+          )}
+          {torchSupported && (
+            <Button
+              type="button"
+              variant={torchOn ? "default" : "outline"}
+              size="sm"
+              onClick={() => void toggleTorch()}
+              disabled={working}
+            >
+              {t("scan.torch")}{torchOn ? " ✓" : ""}
+            </Button>
+          )}
+        </div>
+      )}
+
       {scannerReady && !needsTap && !working && (
-        <p className="mt-2 text-xs text-muted-foreground">{t("scan.tapToFocus")}</p>
+        <>
+          <p className="mt-2 text-xs text-muted-foreground">{t("scan.tapToFocus")}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{t("scan.paperHint")}</p>
+        </>
       )}
 
       {blockingError && (
