@@ -12,6 +12,7 @@ import {
 } from "@zxing/library";
 import { PageShell } from "@/components/Header";
 import { Button } from "@/components/ui/button";
+import { LoadingOverlay } from "@/components/LoadingOverlay";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -592,6 +593,10 @@ function ScanPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <LoadingOverlay
+        open={working}
+        message={fileScanning ? t("common.scanning") : t("common.verifying")}
+      />
     </PageShell>
   );
 }
