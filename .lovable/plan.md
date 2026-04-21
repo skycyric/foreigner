@@ -1,54 +1,94 @@
 
+## 問題
 
-## 修正 Android 掃描速度 + 測試模式失效
+使用者操作（掃 QR、登錄交易單號、查抽獎結果、領取/查詢優惠券）後，畫面沒有明確的「處理中」遮罩，按鈕只是 disabled 但視覺上幾乎沒變化，導致使用者以為沒反應、一直重複點擊。同時跳轉時也是「畫面突然換掉」，沒有過渡提示。
 
-### 問題 1：Android 相機掃描慢
+掃過所有有非同步動作的頁面，盤點如下：
 
-可能原因（需看 scan.tsx 確認）：
-- `@yudiel/react-qr-scanner` 預設 scan delay 較保守
-- 沒指定後鏡頭 / 解析度過高導致每幀處理變慢
-- constraints 沒鎖定 `facingMode: environment` 或解析度
+| 頁面 | 觸發點 | 目前狀態 | 問題 |
+|---|---|---|---|
+| `welcome` | 送出 email | 按鈕變 disabled、顯示 `submitting` 文字 | 太弱，使用者看不出來 |
+| `manual` | 送出交易單號 | 按鈕變 disabled | 同上 |
+| `scan` | 掃到 QR / 上傳照片 | 上方一行小字「正在辨識」 | 容易被忽略，且照片掃描時相機區塊空白 |
+| `coupons` | 載入優惠券、按「掃描 QR」、按「手動輸入」 | 沒有過渡遮罩，按下按鈕到下一頁有空檔 | 使用者重複點 |
+| `result` | 載入抽獎結果 | 用 `Loading...` 純文字 | 太單薄 |
+| `winners` | 載入名單 | 用 `Loading...` 純文字 | 同上 |
+| `index` (語系跳轉) | 入站第一秒 | 整頁空白 | 使用者以為壞了 |
 
-### 問題 2：測試 QR code 一直顯示「已掃過」
+---
 
-可能原因：
-1. **`IS_TEST_MODE` 在 published 環境是 false** — 目前用 `import.meta.env.DEV`，但 published preview / production build 都是 false，所以 TN 不會加時間戳，第二次掃就被 unique constraint 擋掉
-2. user 現在在 `id-preview--*.lovable.app`（published preview），不是 dev server，所以測試模式根本沒啟用
+## 解法
 
-從 console 看到 `index-CTRb1Dr1.js`（minified bundle）→ 確認是 production build，`import.meta.env.DEV = false`。
+做一個**統一的全螢幕 Loading Overlay**，所有「會卡住一段時間」或「即將跳頁」的時刻都顯示它。一致的視覺語言＝使用者不會困惑。
 
-### 修正方案
+### 1. 新建共用元件 `src/components/LoadingOverlay.tsx`
 
-**1. 改 `src/lib/test-mode.ts` — 用更可靠的判斷**
+- 半透明黑色全螢幕遮罩（`fixed inset-0 z-50 bg-black/60 backdrop-blur-sm`）
+- 中央放一個大的 spinner（用 `lucide-react` 的 `Loader2` + `animate-spin`）
+- 下方顯示一行訊息（i18n 文案）
+- `pointer-events: auto` 完全擋住背景點擊，避免使用者誤觸
+- props：`open: boolean`、`message?: string`
 
-改用 hostname 判斷，preview / lovableproject 環境都算測試：
-```ts
-export const IS_TEST_MODE =
-  import.meta.env.DEV ||
-  (typeof window !== "undefined" &&
-    /lovable(project)?\.app$/.test(window.location.hostname));
-```
+### 2. 新建小型 inline `Spinner` 元件
 
-正式網域（例如自訂 domain 或 `foreigner.lovable.app` published 上線後）只要不在白名單就會自動關掉。
+給按鈕內顯示用，按下按鈕後按鈕內出現 spinner + 文字（取代純 disabled）。
 
-> 補充：若希望 `foreigner.lovable.app`（published 正式網址）也關掉測試模式，會排除 `foreigner.lovable.app`，只允許 `*-preview--*.lovable.app` 與 `lovableproject.com`。會在 plan 確認後實作。
+### 3. 各頁套用
 
-**2. 加快 Android 掃描（`src/routes/$lang.scan.tsx`）**
+**welcome**
+- 送出 email 中：按鈕內顯示 spinner
+- 送出成功正在跳轉到 `coupons`：顯示全螢幕 LoadingOverlay（訊息：「準備您的優惠券…」）
 
-需先 view 檔案確認目前 props，預期調整：
-- `scanDelay={100}` （或更低，預設常是 500ms）
-- `constraints={{ facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } }}` — 鎖定後鏡頭 + 720p（過高解析會拖慢解碼）
-- 確認 `formats={["qr_code"]}` 限制只解 QR（如果套件支援）
+**manual**
+- 送出中：按鈕內 spinner
+- 送出成功跳 `result` 中：全螢幕 overlay（訊息：「處理中…」）
 
-**3. SSR hydration 注意**
+**scan**
+- 掃到 QR / 上傳照片解碼成功 → 呼叫 API 期間：全螢幕 overlay（訊息：「驗證交易單號…」）
+  - 取代目前那行不明顯的 `scan.processing` 狀態文字
+- 上傳照片解碼期間（`fileScanning`）：全螢幕 overlay（訊息：「辨識中…」）
 
-`window.location.hostname` 在 SSR 會炸 → 已用 `typeof window !== "undefined"` 守衛，SSR 時回傳 false，client hydrate 後才變 true。這對 TN 提交沒影響（提交一定在 client 端發生）。
+**coupons**
+- 初次載入清單：用 skeleton 卡片（不要白屏）
+- 點「掃描 QR」/「手動輸入」按鈕：立刻顯示全螢幕 overlay 再跳頁，避免空檔
+- 同樣處理「查看抽獎結果」按鈕
 
-### 檔案影響
-- 修改：`src/lib/test-mode.ts`、`src/routes/$lang.scan.tsx`
-- 不動 DB、不動 docs（PRODUCTION_CHECKLIST 仍適用）
+**result**
+- 載入中：全螢幕 overlay（訊息：「查詢結果中…」）取代目前的 `Loading...` 純文字
 
-### 風險
-- 測試模式判斷改寬後，preview 網域的所有掃描資料都會帶 `__t` 後綴 → 上線清理 SQL 一樣可清乾淨，符合既有 checklist
-- 掃描速度調快若造成誤判，可回調 `scanDelay`
+**winners**
+- 載入中：用 skeleton 列表
 
+**index（語系跳轉）**
+- 顯示一個極簡的全螢幕 spinner（不需要文字，因為 i18n 還沒載入），避免白屏
+
+### 4. i18n 文案新增
+
+`src/locales/{zh,en,ja,ko}.json` 加：
+- `common.loading`（通用）
+- `common.processing`（處理中）
+- `common.verifying`（驗證中）
+- `common.preparing`（準備中）
+- `common.redirecting`（跳轉中）
+
+### 5. 防呆：按鈕點擊去抖
+
+所有觸發跳頁的按鈕，按下後立刻 setState 顯示 overlay，避免使用者短時間內連點兩次觸發兩次導航。
+
+---
+
+## 不會動到的部分
+
+- ZXing 掃描器邏輯
+- AlertDialog（已使用過交易單）popup
+- API / Supabase 邏輯
+- 路由結構
+
+---
+
+## 待確認
+
+1. **視覺風格**：Loading overlay 你想要 (a) 半透明黑底 + 白色 spinner（簡潔）還是 (b) 帶品牌色（用主色 spinner）？我預設走 (b)，更符合活動氛圍。
+2. **是否需要 skeleton**：`coupons` 與 `winners` 的列表載入，要做 skeleton 卡片，還是統一用全螢幕 overlay 就好？我預設 skeleton（體感較順）。
+
+如果這兩點沒意見，我直接照預設執行。
