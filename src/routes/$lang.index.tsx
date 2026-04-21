@@ -1,9 +1,10 @@
 import { createFileRoute, Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { PageShell } from "@/components/Header";
 import { Button } from "@/components/ui/button";
+import { LoadingOverlay } from "@/components/LoadingOverlay";
 import { getStoredEmail } from "@/lib/device";
 
 export const Route = createFileRoute("/$lang/")({
@@ -21,13 +22,21 @@ function HomePage() {
   const { t } = useTranslation();
   const { lang } = useParams({ from: "/$lang/" });
   const navigate = useNavigate();
+  const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
     const stored = getStoredEmail();
     if (stored) {
+      setRedirecting(true);
       navigate({ to: "/$lang/coupons", params: { lang }, replace: true });
     }
   }, [lang, navigate]);
+
+  function goWelcome() {
+    if (redirecting) return;
+    setRedirecting(true);
+    navigate({ to: "/$lang/welcome", params: { lang } });
+  }
 
   return (
     <PageShell>
@@ -44,11 +53,14 @@ function HomePage() {
           </p>
         </div>
 
-        <Button asChild size="lg" className="h-14 w-full text-base font-medium">
-          <Link to="/$lang/welcome" params={{ lang }}>
-            {t("home.cta")}
-            <ArrowRight className="ml-1 h-4 w-4" strokeWidth={1.75} />
-          </Link>
+        <Button
+          size="lg"
+          className="h-14 w-full text-base font-medium"
+          onClick={goWelcome}
+          disabled={redirecting}
+        >
+          {t("home.cta")}
+          <ArrowRight className="ml-1 h-4 w-4" strokeWidth={1.75} />
         </Button>
 
         <div className="flex justify-center gap-4 text-xs text-muted-foreground">
@@ -63,6 +75,7 @@ function HomePage() {
           </Link>
         </div>
       </div>
+      <LoadingOverlay open={redirecting} message={t("common.preparing")} />
     </PageShell>
   );
 }
