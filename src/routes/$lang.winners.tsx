@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Trophy } from "lucide-react";
 import { PageShell } from "@/components/Header";
 import { api, type Winner } from "@/lib/api";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableHeader,
@@ -34,8 +35,11 @@ function WinnersPage() {
       </h1>
 
       {winners === null && (
-        <div className="mt-4 rounded-lg bg-muted p-4 text-center text-sm">
-          {t("common.loading")}
+        <div className="mt-4 space-y-2">
+          <Skeleton className="h-10 w-full rounded-md" />
+          <Skeleton className="h-10 w-full rounded-md" />
+          <Skeleton className="h-10 w-full rounded-md" />
+          <Skeleton className="h-10 w-full rounded-md" />
         </div>
       )}
       {winners && winners.length === 0 && (

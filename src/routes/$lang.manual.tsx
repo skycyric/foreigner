@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { PageShell } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { LoadingOverlay, Spinner } from "@/components/LoadingOverlay";
 import { api, isValidTnFormat, TN_FORMAT } from "@/lib/api";
 import { getStoredEmail } from "@/lib/device";
 import { toast } from "sonner";
@@ -20,6 +21,7 @@ function ManualPage() {
   const [letters, setLetters] = useState("");
   const [digits, setDigits] = useState("");
   const [loading, setLoading] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
   const digitsRef = useRef<HTMLInputElement>(null);
 
   async function submit() {
@@ -41,6 +43,7 @@ function ManualPage() {
         toast.error(t("manual.alreadyUsed"));
         return;
       }
+      setRedirecting(true);
       navigate({ to: "/$lang/result", params: { lang }, search: { tn }, replace: true });
     } catch (e) {
       console.error(e);
@@ -112,19 +115,27 @@ function ManualPage() {
           size="lg"
           className="h-14 w-full text-base font-semibold"
           onClick={submit}
-          disabled={loading}
+          disabled={loading || redirecting}
         >
-          {loading ? t("common.loading") : t("manual.submit")}
+          {loading ? (
+            <>
+              <Spinner /> {t("common.processing")}
+            </>
+          ) : (
+            t("manual.submit")
+          )}
         </Button>
 
         <Button
           variant="ghost"
           className="w-full"
           onClick={() => navigate({ to: "/$lang/coupons", params: { lang }, replace: true })}
+          disabled={loading || redirecting}
         >
           {t("common.back")}
         </Button>
       </div>
+      <LoadingOverlay open={redirecting} message={t("common.processing")} />
     </PageShell>
   );
 }

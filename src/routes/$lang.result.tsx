@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Check } from "lucide-react";
 import { PageShell } from "@/components/Header";
 import { Button } from "@/components/ui/button";
+import { LoadingOverlay } from "@/components/LoadingOverlay";
 import { getStoredEmail } from "@/lib/device";
 
 export const Route = createFileRoute("/$lang/result")({
@@ -20,6 +21,7 @@ function ResultPage() {
   const { tn } = useSearch({ from: "/$lang/result" });
   const navigate = useNavigate();
   const [ready, setReady] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
     if (!getStoredEmail()) {
@@ -29,7 +31,7 @@ function ResultPage() {
     setReady(true);
   }, [lang, navigate]);
 
-  if (!ready) return null;
+  if (!ready) return <LoadingOverlay open message={t("common.loading")} />;
 
   return (
     <PageShell>
@@ -56,18 +58,27 @@ function ResultPage() {
         <Button
           size="lg"
           className="h-14 w-full font-medium"
-          onClick={() => navigate({ to: "/$lang/scan", params: { lang }, replace: true })}
+          onClick={() => {
+            setRedirecting(true);
+            navigate({ to: "/$lang/scan", params: { lang }, replace: true });
+          }}
+          disabled={redirecting}
         >
           {t("result.again")}
         </Button>
         <Button
           variant="ghost"
           className="w-full"
-          onClick={() => navigate({ to: "/$lang/coupons", params: { lang }, replace: true })}
+          onClick={() => {
+            setRedirecting(true);
+            navigate({ to: "/$lang/coupons", params: { lang }, replace: true });
+          }}
+          disabled={redirecting}
         >
           {t("result.home")}
         </Button>
       </div>
+      <LoadingOverlay open={redirecting} message={t("common.redirecting")} />
     </PageShell>
   );
 }

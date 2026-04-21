@@ -110,6 +110,11 @@
   },
   "common": {
     "loading": "載入中…",
+    "processing": "處理中…",
+    "verifying": "驗證交易單…",
+    "preparing": "準備您的優惠券…",
+    "redirecting": "跳轉中…",
+    "scanning": "辨識中…",
     "back": "返回",
     "confirm": "確認",
     "cancel": "取消"

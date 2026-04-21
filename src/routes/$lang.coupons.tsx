@@ -5,6 +5,8 @@ import JsBarcode from "jsbarcode";
 import { ScanLine, Keyboard, Trophy, Ticket } from "lucide-react";
 import { PageShell } from "@/components/Header";
 import { Button } from "@/components/ui/button";
+import { LoadingOverlay } from "@/components/LoadingOverlay";
+import { Skeleton } from "@/components/ui/skeleton";
 import { api, type Coupon } from "@/lib/api";
 import { clearStoredEmail, getStoredEmail } from "@/lib/device";
 import { getSsrIdentity } from "@/lib/server-identity";
@@ -83,6 +85,7 @@ function CouponsPage() {
   // 初始：優先用 SSR 資料；否則用 client localStorage 快取
   const [email, setEmail] = useState<string | null>(ssrEmail);
   const [coupons, setCoupons] = useState<Coupon[] | null>(ssrCoupons);
+  const [navigating, setNavigating] = useState<string | null>(null);
 
   useEffect(() => {
     const stored = getStoredEmail();
@@ -112,7 +115,7 @@ function CouponsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang, navigate]);
 
-  if (!email) return null;
+  if (!email) return <LoadingOverlay open message={t("common.loading")} />;
 
   return (
     <PageShell>
@@ -142,14 +145,22 @@ function CouponsPage() {
           {t("coupons.lotteryHint")}
         </p>
         <div className="space-y-2">
-          <Button asChild className="h-12 w-full font-medium">
-            <Link to="/$lang/scan" params={{ lang }}>
+          <Button asChild className="h-12 w-full font-medium" disabled={!!navigating}>
+            <Link
+              to="/$lang/scan"
+              params={{ lang }}
+              onClick={() => setNavigating(t("common.redirecting"))}
+            >
               <ScanLine className="h-4 w-4" strokeWidth={1.75} />
               {t("coupons.scanBtn")}
             </Link>
           </Button>
-          <Button asChild variant="outline" className="h-12 w-full font-medium">
-            <Link to="/$lang/manual" params={{ lang }}>
+          <Button asChild variant="outline" className="h-12 w-full font-medium" disabled={!!navigating}>
+            <Link
+              to="/$lang/manual"
+              params={{ lang }}
+              onClick={() => setNavigating(t("common.redirecting"))}
+            >
               <Keyboard className="h-4 w-4" strokeWidth={1.75} />
               {t("coupons.manualBtn")}
             </Link>
@@ -159,9 +170,10 @@ function CouponsPage() {
 
       <div className="mt-8 space-y-3">
         {coupons === null && (
-          <div className="rounded-lg bg-muted p-4 text-center text-sm text-muted-foreground">
-            {t("common.loading")}
-          </div>
+          <>
+            <Skeleton className="h-24 w-full rounded-xl" />
+            <Skeleton className="h-24 w-full rounded-xl" />
+          </>
         )}
         {coupons && coupons.length === 0 && (
           <div className="rounded-lg border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">
@@ -188,12 +200,14 @@ function CouponsPage() {
         <Link
           to="/$lang/winners"
           params={{ lang }}
+          onClick={() => setNavigating(t("common.redirecting"))}
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
         >
           <Trophy className="h-3.5 w-3.5" strokeWidth={1.75} />
           {t("coupons.viewWinners")}
         </Link>
       </div>
+      <LoadingOverlay open={!!navigating} message={navigating ?? undefined} />
     </PageShell>
   );
 }
