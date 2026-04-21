@@ -18,7 +18,16 @@
     "submit": "Get Coupon",
     "invalidAccount": "Please enter a valid account",
     "invalidDomain": "Please choose or enter a domain",
-    "mustAgree": "Please agree to the terms first"
+    "mustAgree": "Please agree to the terms first",
+    "tabQuick": "Quick domain pick",
+    "tabFull": "Type full email",
+    "notifyAt": "We'll notify the winner at this email",
+    "placeholder": "Please enter your full email",
+    "autofilled": "Email detected automatically",
+    "typoSuggestion": "Did you mean {{domain}}?",
+    "typoFix": "Fix it",
+    "fullEmailLabel": "Email address",
+    "notCommonDomain": "Not a common domain? Switch to \"Type full email\""
   },
   "coupons": {
     "title": "My Coupons",

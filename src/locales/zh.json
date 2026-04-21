@@ -18,7 +18,16 @@
     "submit": "領取折扣券",
     "invalidAccount": "請輸入正確的帳號",
     "invalidDomain": "請選擇或輸入網域",
-    "mustAgree": "請先勾選同意條款"
+    "mustAgree": "請先勾選同意條款",
+    "tabQuick": "快速選擇網域",
+    "tabFull": "自行輸入 Email",
+    "notifyAt": "中獎將以此 Email 通知您",
+    "placeholder": "請輸入完整的 Email",
+    "autofilled": "已自動辨識您的 Email",
+    "typoSuggestion": "您是不是想輸入 {{domain}}？",
+    "typoFix": "點此修正",
+    "fullEmailLabel": "Email 地址",
+    "notCommonDomain": "不是常用網域？切換到「自行輸入 Email」"
   },
   "coupons": {
     "title": "我的折扣券",
