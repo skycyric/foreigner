@@ -83,9 +83,9 @@ VITE_API_BASE_URL=https://your-api.everrich-group.com/api npm run build
 | `lottery_entries` | 抽獎登錄紀錄（tn_number unique） |
 | `winners` | 中獎名單（masked_email + rank + is_backup） |
 
-## 部署到貴司主機（events.everrich-group.com）
+## 部署到公司主機（events.everrich-group.com）
 
-目前部署在 Cloudflare Workers（透過 Lovable 自動部署）。如需自架到貴司主機，有兩條路：
+目前部署在 Cloudflare Workers（透過 Lovable 自動部署）。如需自架到公司主機，有兩條路：
 
 ### A. 仍用 Cloudflare Workers / 邊緣節點（建議）
 
