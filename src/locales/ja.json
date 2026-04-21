@@ -18,7 +18,16 @@
     "submit": "クーポンを受け取る",
     "invalidAccount": "正しいアカウントを入力してください",
     "invalidDomain": "ドメインを選択または入力してください",
-    "mustAgree": "規約への同意が必要です"
+    "mustAgree": "規約への同意が必要です",
+    "tabQuick": "ドメインを選ぶ",
+    "tabFull": "メールを直接入力",
+    "notifyAt": "当選はこのメールに通知します",
+    "placeholder": "完全なメールアドレスを入力してください",
+    "autofilled": "メールアドレスを自動認識しました",
+    "typoSuggestion": "もしかして {{domain}} ですか？",
+    "typoFix": "修正する",
+    "fullEmailLabel": "メールアドレス",
+    "notCommonDomain": "一覧にないドメインですか？「メールを直接入力」に切り替えてください"
   },
   "coupons": {
     "title": "マイクーポン",

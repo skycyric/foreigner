@@ -18,7 +18,16 @@
     "submit": "쿠폰 받기",
     "invalidAccount": "올바른 계정을 입력하세요",
     "invalidDomain": "도메인을 선택 또는 입력하세요",
-    "mustAgree": "약관에 먼저 동의해 주세요"
+    "mustAgree": "약관에 먼저 동의해 주세요",
+    "tabQuick": "도메인 빠른 선택",
+    "tabFull": "이메일 직접 입력",
+    "notifyAt": "당첨 결과는 이 이메일로 안내됩니다",
+    "placeholder": "전체 이메일 주소를 입력하세요",
+    "autofilled": "이메일이 자동으로 인식되었습니다",
+    "typoSuggestion": "혹시 {{domain}} 인가요?",
+    "typoFix": "여기를 눌러 수정",
+    "fullEmailLabel": "이메일 주소",
+    "notCommonDomain": "일반 도메인이 아닌가요? \"이메일 직접 입력\" 으로 전환하세요"
   },
   "coupons": {
     "title": "내 쿠폰",
