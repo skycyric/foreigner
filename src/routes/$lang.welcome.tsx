@@ -209,7 +209,10 @@ function WelcomePage() {
           )}
         </Button>
       </div>
-      <LoadingOverlay open={redirecting} message={t("common.preparing")} />
+      <LoadingOverlay
+        open={loading || redirecting}
+        message={redirecting ? t("common.preparing") : t("common.processing")}
+      />
     </PageShell>
   );
 }
