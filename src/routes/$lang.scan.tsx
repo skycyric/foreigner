@@ -580,8 +580,10 @@ function ScanPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t("manual.alreadyUsed")}</AlertDialogTitle>
-            <AlertDialogDescription>{blockingError}</AlertDialogDescription>
+            <AlertDialogTitle>{blockingError}</AlertDialogTitle>
+            <AlertDialogDescription className="sr-only">
+              {blockingError}
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogAction onClick={() => void handleRescan()}>
