@@ -1,4 +1,5 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
+import { Loader2 } from "lucide-react";
 import { detectInitialLang } from "@/lib/server-identity";
 import { resolvePreferredLang } from "@/lib/i18n";
 
@@ -11,4 +12,10 @@ export const Route = createFileRoute("/")({
         : resolvePreferredLang();
     throw redirect({ to: "/$lang", params: { lang }, replace: true });
   },
+  // 萬一跳轉沒立即發生（極短一瞬），不要白屏
+  component: () => (
+    <div className="flex min-h-screen items-center justify-center bg-background">
+      <Loader2 className="h-10 w-10 animate-spin text-primary" strokeWidth={2} />
+    </div>
+  ),
 });
