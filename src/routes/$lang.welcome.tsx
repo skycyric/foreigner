@@ -5,6 +5,7 @@ import { PageShell } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { LoadingOverlay, Spinner } from "@/components/LoadingOverlay";
 import { api } from "@/lib/api";
 import { getDeviceId, getStoredEmail, setStoredEmail } from "@/lib/device";
 import { toast } from "sonner";
@@ -27,6 +28,7 @@ function WelcomePage() {
   const [customDomain, setCustomDomain] = useState("");
   const [agree, setAgree] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
     const stored = getStoredEmail();
@@ -85,10 +87,12 @@ function WelcomePage() {
         language: lang,
       });
       setStoredEmail(email);
+      setRedirecting(true);
       navigate({ to: "/$lang/coupons", params: { lang } });
     } catch (e) {
       console.error(e);
       toast.error(String(e));
+      setRedirecting(false);
     } finally {
       setLoading(false);
     }
@@ -194,11 +198,18 @@ function WelcomePage() {
           size="lg"
           className="h-14 w-full text-base font-semibold"
           onClick={submit}
-          disabled={loading}
+          disabled={loading || redirecting}
         >
-          {loading ? t("common.loading") : t("welcome.submit")}
+          {loading ? (
+            <>
+              <Spinner /> {t("common.processing")}
+            </>
+          ) : (
+            t("welcome.submit")
+          )}
         </Button>
       </div>
+      <LoadingOverlay open={redirecting} message={t("common.preparing")} />
     </PageShell>
   );
 }
