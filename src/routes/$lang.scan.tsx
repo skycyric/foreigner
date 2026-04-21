@@ -12,6 +12,15 @@ import {
 } from "@zxing/library";
 import { PageShell } from "@/components/Header";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { api, isValidTnFormat } from "@/lib/api";
 import { getStoredEmail } from "@/lib/device";
 import { toast } from "sonner";
@@ -522,21 +531,6 @@ function ScanPage() {
         </>
       )}
 
-      {blockingError && (
-        <div className="mt-4 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
-          <p>{blockingError}</p>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="mt-2"
-            onClick={() => void handleRescan()}
-          >
-            {t("scan.rescan")}
-          </Button>
-        </div>
-      )}
-
       {error && !blockingError && (
         <div className="mt-4 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
           {error}
@@ -577,6 +571,27 @@ function ScanPage() {
           {t("coupons.manualBtn")}
         </Button>
       </div>
+
+      <AlertDialog
+        open={!!blockingError}
+        onOpenChange={(open) => {
+          if (!open) void handleRescan();
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{blockingError}</AlertDialogTitle>
+            <AlertDialogDescription className="sr-only">
+              {blockingError}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => void handleRescan()}>
+              {t("scan.rescan")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageShell>
   );
 }
