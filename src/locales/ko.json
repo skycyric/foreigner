@@ -108,5 +108,15 @@
       }
     ]
   },
-  "common": { "loading": "로딩 중…", "back": "뒤로", "confirm": "확인", "cancel": "취소" }
+  "common": {
+    "loading": "로딩 중…",
+    "processing": "처리 중…",
+    "verifying": "영수증 확인 중…",
+    "preparing": "쿠폰을 준비 중…",
+    "redirecting": "이동 중…",
+    "scanning": "인식 중…",
+    "back": "뒤로",
+    "confirm": "확인",
+    "cancel": "취소"
+  }
 }

@@ -126,6 +126,11 @@
   },
   "common": {
     "loading": "Loading…",
+    "processing": "Processing…",
+    "verifying": "Verifying receipt…",
+    "preparing": "Preparing your coupons…",
+    "redirecting": "Redirecting…",
+    "scanning": "Scanning…",
     "back": "Back",
     "confirm": "OK",
     "cancel": "Cancel"
