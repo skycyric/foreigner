@@ -1,94 +1,95 @@
 
-## 問題
+## 修訂後的方案
 
-使用者操作（掃 QR、登錄交易單號、查抽獎結果、領取/查詢優惠券）後，畫面沒有明確的「處理中」遮罩，按鈕只是 disabled 但視覺上幾乎沒變化，導致使用者以為沒反應、一直重複點擊。同時跳轉時也是「畫面突然換掉」，沒有過渡提示。
+依你的回覆調整：
 
-掃過所有有非同步動作的頁面，盤點如下：
-
-| 頁面 | 觸發點 | 目前狀態 | 問題 |
-|---|---|---|---|
-| `welcome` | 送出 email | 按鈕變 disabled、顯示 `submitting` 文字 | 太弱，使用者看不出來 |
-| `manual` | 送出交易單號 | 按鈕變 disabled | 同上 |
-| `scan` | 掃到 QR / 上傳照片 | 上方一行小字「正在辨識」 | 容易被忽略，且照片掃描時相機區塊空白 |
-| `coupons` | 載入優惠券、按「掃描 QR」、按「手動輸入」 | 沒有過渡遮罩，按下按鈕到下一頁有空檔 | 使用者重複點 |
-| `result` | 載入抽獎結果 | 用 `Loading...` 純文字 | 太單薄 |
-| `winners` | 載入名單 | 用 `Loading...` 純文字 | 同上 |
-| `index` (語系跳轉) | 入站第一秒 | 整頁空白 | 使用者以為壞了 |
+1. **取消送出前確認 popup**（大部分人不會仔細看，反而多一步點擊摩擦）→ 改用其他方式擋 typo
+2. **Custom domain 獨立成另一個輸入模式**（不混在 chip 裡）
+3. **Toast + 卡片閃爍兩個都做**
 
 ---
 
-## 解法
+## 一、Email 輸入頁重新設計
 
-做一個**統一的全螢幕 Loading Overlay**，所有「會卡住一段時間」或「即將跳頁」的時刻都顯示它。一致的視覺語言＝使用者不會困惑。
+### 預設 UI：兩個並列的明確選擇
 
-### 1. 新建共用元件 `src/components/LoadingOverlay.tsx`
+進入頁面時，使用者看到兩個明顯的輸入方式（Tabs 切換）：
 
-- 半透明黑色全螢幕遮罩（`fixed inset-0 z-50 bg-black/60 backdrop-blur-sm`）
-- 中央放一個大的 spinner（用 `lucide-react` 的 `Loader2` + `animate-spin`）
-- 下方顯示一行訊息（i18n 文案）
-- `pointer-events: auto` 完全擋住背景點擊，避免使用者誤觸
-- props：`open: boolean`、`message?: string`
+```text
+[ 快速選擇網域 ]  [ 自行輸入 Email ]
+```
 
-### 2. 新建小型 inline `Spinner` 元件
+**分頁 A：快速選擇網域**（手機族群最快）
+- account 輸入框 + `@` + 5 個常用網域 chip
+- 移除原本混在 chip 裡的「+ 自訂網域」按鈕
+- 文案提示：「不是常用網域？切換到『自行輸入 Email』分頁」
 
-給按鈕內顯示用，按下按鈕後按鈕內出現 spinner + 文字（取代純 disabled）。
+**分頁 B：自行輸入 Email**（autofill / 桌面族群）
+- 單一個 `<input type="email" name="email" autocomplete="email" autoFocus>`
+- 完全標準的 email 欄位，autofill / 密碼管理員 100% 相容
+- 即時解析顯示「將以此 Email 通知您」確認卡
 
-### 3. 各頁套用
+兩個分頁共用底下的「確認卡 + 同意條款 + 送出按鈕」。
 
-**welcome**
-- 送出 email 中：按鈕內顯示 spinner
-- 送出成功正在跳轉到 `coupons`：顯示全螢幕 LoadingOverlay（訊息：「準備您的優惠券…」）
+### 強化「擷取確認卡」（取代原本灰色小字預覽）
 
-**manual**
-- 送出中：按鈕內 spinner
-- 送出成功跳 `result` 中：全螢幕 overlay（訊息：「處理中…」）
+- 大字、粗體、品牌色框線、`CheckCircle2` 圖示
+- 文案：「📧 中獎將以此 Email 通知您：」
+- email 完整時顯示綠色高亮 + 大字 email
+- 不完整時顯示淺色 placeholder「請輸入完整的 Email」
+- 置於送出按鈕正上方，使用者送出前一定會看到
 
-**scan**
-- 掃到 QR / 上傳照片解碼成功 → 呼叫 API 期間：全螢幕 overlay（訊息：「驗證交易單號…」）
-  - 取代目前那行不明顯的 `scan.processing` 狀態文字
-- 上傳照片解碼期間（`fileScanning`）：全螢幕 overlay（訊息：「辨識中…」）
+### 自動填入 / 貼上的強回饋（兩個都做）
 
-**coupons**
-- 初次載入清單：用 skeleton 卡片（不要白屏）
-- 點「掃描 QR」/「手動輸入」按鈕：立刻顯示全螢幕 overlay 再跳頁，避免空檔
-- 同樣處理「查看抽獎結果」按鈕
+當 `handleAccountChange` 偵測到完整 email（含 `@`）：
 
-**result**
-- 載入中：全螢幕 overlay（訊息：「查詢結果中…」）取代目前的 `Loading...` 純文字
+1. **確認卡套用 1.5 秒 `animate-pulse` + 品牌色閃爍**
+2. **跳出 Toast**：「已自動辨識您的 Email：xxx@yyy.com」
+3. 自動 scroll 到確認卡位置（確保 autofill 後使用者看到）
 
-**winners**
-- 載入中：用 skeleton 列表
+如果使用者在「快速選擇網域」分頁貼上完整 email，且網域不在預設清單，**自動切換到「自行輸入 Email」分頁**並填入完整 email（不再切到 custom chip）。
 
-**index（語系跳轉）**
-- 顯示一個極簡的全螢幕 spinner（不需要文字，因為 i18n 還沒載入），避免白屏
+### 取代「送出前確認」的防 typo 機制
 
-### 4. i18n 文案新增
+由於不做 popup，改用**輸入時即時提示**：
 
-`src/locales/{zh,en,ja,ko}.json` 加：
-- `common.loading`（通用）
-- `common.processing`（處理中）
-- `common.verifying`（驗證中）
-- `common.preparing`（準備中）
-- `common.redirecting`（跳轉中）
+- 偵測常見 typo 網域（`gmial.com` / `gamil.com` / `yahoo.cm` / `hotnail.com` / `outlok.com` 等）
+- 在確認卡下方顯示淺色提示：「您是不是想輸入 `gmail.com`？[點此修正]」
+- 點擊後一鍵替換，不打斷流程
+- 維護一個小型 typo → 正確網域的 mapping table（約 15 組常見錯字）
 
-### 5. 防呆：按鈕點擊去抖
-
-所有觸發跳頁的按鈕，按下後立刻 setState 顯示 overlay，避免使用者短時間內連點兩次觸發兩次導航。
+這比 popup 更好：使用者不需要多一步點擊，但 typo 一定會被提示。
 
 ---
 
-## 不會動到的部分
+## 二、i18n 文案新增
 
-- ZXing 掃描器邏輯
-- AlertDialog（已使用過交易單）popup
-- API / Supabase 邏輯
-- 路由結構
+`src/locales/{zh,en,ja,ko}.json` `welcome` 區塊新增：
+
+- `tabQuick`：「快速選擇網域」
+- `tabFull`：「自行輸入 Email」
+- `notifyAt`：「中獎將以此 Email 通知您」
+- `placeholder`：「請輸入完整的 Email」
+- `autofilled`：「已自動辨識您的 Email」
+- `typoSuggestion`：「您是不是想輸入 {{domain}}？」
+- `typoFix`：「點此修正」
+- `fullEmailLabel`：「Email 地址」
+- `notCommonDomain`：「不是常用網域？切換到「自行輸入 Email」」
 
 ---
 
-## 待確認
+## 三、修改檔案清單
 
-1. **視覺風格**：Loading overlay 你想要 (a) 半透明黑底 + 白色 spinner（簡潔）還是 (b) 帶品牌色（用主色 spinner）？我預設走 (b)，更符合活動氛圍。
-2. **是否需要 skeleton**：`coupons` 與 `winners` 的列表載入，要做 skeleton 卡片，還是統一用全螢幕 overlay 就好？我預設 skeleton（體感較順）。
+- `src/routes/$lang.welcome.tsx`（主要改動：加 Tabs、確認卡升級、typo 偵測、autofill toast/閃爍、scroll、移除 chip 內 custom 按鈕）
+- `src/locales/zh.json`、`en.json`、`ja.json`、`ko.json`（新增 9 個 key）
 
-如果這兩點沒意見，我直接照預設執行。
+需引入 `@/components/ui/tabs`（已存在）、`lucide-react` 的 `CheckCircle2`、`AlertCircle`。
+
+---
+
+## 四、不會動到的部分
+
+- `getOrCreateParticipant` API 邏輯
+- `LoadingOverlay` 流程（保留現有）
+- `getDeviceId` / `setStoredEmail`
+- 路由結構、其他頁面
