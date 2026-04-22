@@ -24,7 +24,7 @@
 
 - TanStack Start v1（React 19 + SSR，部署到 Cloudflare Workers via `@cloudflare/vite-plugin`）
 - Vite 7 + TypeScript（strict）
-- Tailwind CSS v4 + shadcn/ui（紅×黃×米白節慶配色）
+- Tailwind CSS v4 + shadcn/ui
 - 檔案式路由（`src/routes/$lang.*.tsx`），語言為 URL 第一段
 - TanStack Query（資料快取）
 - react-i18next + cookie/Accept-Language SSR 偵測
