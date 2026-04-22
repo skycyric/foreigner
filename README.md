@@ -44,7 +44,7 @@ api.getWinners()
 
 TN 格式集中於同檔案的 `TN_FORMAT` 常數（`letters`, `digits`, `pattern`），改長度只動這裡，scan / manual / API 全部跟著變。
 
-### 切換到貴司自家後端
+### 切換到公司自家後端
 
 設定 `VITE_API_BASE_URL` 環境變數，build 時即會改走外部 REST API：
 
