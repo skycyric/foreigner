@@ -102,7 +102,6 @@
 |---|---|---|---|
 | `update_participants_updated_at` | BEFORE UPDATE | `update_updated_at_column()` | 自動更新 `updated_at` |
 | `trg_assign_coupons_on_participant` | AFTER INSERT | `assign_coupons_to_participant()` | 新增參與者後自動配發優惠券 |
-| `trg_assign_coupons_after_participant_insert` | AFTER INSERT | `assign_coupons_to_participant()` | ⚠️ **與上者重複**，建議移除其一（見第 7 節風險） |
 
 ---
 
@@ -129,7 +128,6 @@
 |---|---|---|
 | `lottery_entries_pkey` | `id` | UNIQUE (PK) |
 | `lottery_entries_tn_number_key` | `tn_number` | UNIQUE |
-| `lottery_entries_tn_number_unique` | `tn_number` | UNIQUE ⚠️ **重複的 unique index**，可清理其一 |
 | `idx_lottery_email` | `email` | btree |
 
 #### 外鍵
@@ -335,11 +333,6 @@ END;
 |---|---|---|---|
 | `participants` | `update_participants_updated_at` | BEFORE UPDATE | `update_updated_at_column()` |
 | `participants` | `trg_assign_coupons_on_participant` | AFTER INSERT | `assign_coupons_to_participant()` |
-| `participants` | `trg_assign_coupons_after_participant_insert` | AFTER INSERT | `assign_coupons_to_participant()` ⚠️ |
-
-> ⚠️ `participants` 上有兩個功能完全相同的 AFTER INSERT trigger，皆呼叫 `assign_coupons_to_participant()`。
-> 雖然函式內部有「該 email 已有 coupons 則跳過」的保護，所以不會配發雙倍優惠券，
-> 但仍建議建立 migration 移除其中一個（見第 7 節）。
 
 ---
 
