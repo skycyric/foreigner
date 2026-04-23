@@ -355,8 +355,8 @@ END;
 
 | 編號 | 項目 | 嚴重性 | 說明 | 建議 |
 |---|---|---|---|---|
-| R1 | `participants` 上有 **兩個重複 trigger** | 中 | `trg_assign_coupons_on_participant` 與 `trg_assign_coupons_after_participant_insert` 行為完全相同 | 建立 migration `DROP TRIGGER trg_assign_coupons_after_participant_insert ON public.participants;` |
-| R2 | `lottery_entries.tn_number` 有 **兩個重複 UNIQUE index** | 低 | `lottery_entries_tn_number_key` 與 `lottery_entries_tn_number_unique` 等價，浪費寫入成本 | 建立 migration 刪除其中一個 |
+| R1 | ~~`participants` 上有兩個重複 trigger~~ | ✅ 已修正 | 已於 migration 中刪除 `trg_assign_coupons_after_participant_insert` | — |
+| R2 | ~~`lottery_entries.tn_number` 有兩個重複 UNIQUE index~~ | ✅ 已修正 | 已於 migration 中刪除 `lottery_entries_tn_number_unique` | — |
 | R3 | RLS 政策**全部開放 public** | **高** | 任何匿名使用者皆可讀 `coupons` / `lottery_entries` / `participants` 全表 | 上線前應改為「依 email match auth.uid() 或 session」收緊 |
 | R4 | `participants` 無 DELETE 政策 | 低 | 一般匿名角色無法刪除帳號（GDPR / 個資法刪除權需求） | 視業務需求決定是否新增 admin-only 政策 |
 | R5 | `coupons.email` nullable | 低 | 允許未指派的優惠券存在（設計上可能是預留功能） | 若不需要可加 `NOT NULL` |
