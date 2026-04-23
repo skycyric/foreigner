@@ -1,95 +1,97 @@
 
-## 修訂後的方案
+## 目標
 
-依你的回覆調整：
+產出一份完整的資料庫 schema 規格文件，涵蓋本專案所有資料表的欄位定義、約束、索引、RLS、觸發器、函式，方便交接給後端工程師或做為對接 API 的依據。
 
-1. **取消送出前確認 popup**（大部分人不會仔細看，反而多一步點擊摩擦）→ 改用其他方式擋 typo
-2. **Custom domain 獨立成另一個輸入模式**（不混在 chip 裡）
-3. **Toast + 卡片閃爍兩個都做**
+## 產出物
 
----
+新增一份文件：`docs/DATABASE_SCHEMA.md`
 
-## 一、Email 輸入頁重新設計
+內容結構如下（中英對照欄位名稱，純文字 + Markdown 表格，不依賴額外工具即可閱讀）：
 
-### 預設 UI：兩個並列的明確選擇
-
-進入頁面時，使用者看到兩個明顯的輸入方式（Tabs 切換）：
+### 1. 概覽
+- 資料庫：PostgreSQL（Lovable Cloud / Supabase）
+- 5 張資料表：`participants`、`lottery_entries`、`coupons`、`coupon_allocation_rules`、`winners`
+- ER 關聯圖（ASCII）：
 
 ```text
-[ 快速選擇網域 ]  [ 自行輸入 Email ]
+participants (email PK)
+   │
+   ├──< lottery_entries (email FK)
+   │
+   └──< coupons (email FK)
+
+coupon_allocation_rules (獨立規則表，被 trigger 讀取)
+
+winners (獨立公告表)
 ```
 
-**分頁 A：快速選擇網域**（手機族群最快）
-- account 輸入框 + `@` + 5 個常用網域 chip
-- 移除原本混在 chip 裡的「+ 自訂網域」按鈕
-- 文案提示：「不是常用網域？切換到『自行輸入 Email』分頁」
+### 2. 每張資料表的詳細規格
 
-**分頁 B：自行輸入 Email**（autofill / 桌面族群）
-- 單一個 `<input type="email" name="email" autocomplete="email" autoFocus>`
-- 完全標準的 email 欄位，autofill / 密碼管理員 100% 相容
-- 即時解析顯示「將以此 Email 通知您」確認卡
+每張表用統一格式呈現：
 
-兩個分頁共用底下的「確認卡 + 同意條款 + 送出按鈕」。
+#### Table: `<table_name>`
+- **用途**：一句話說明
+- **Primary Key**：欄位
+- **Row Count 預估**：說明（例如「每位參與者一筆」）
 
-### 強化「擷取確認卡」（取代原本灰色小字預覽）
+**欄位規格表**：
 
-- 大字、粗體、品牌色框線、`CheckCircle2` 圖示
-- 文案：「📧 中獎將以此 Email 通知您：」
-- email 完整時顯示綠色高亮 + 大字 email
-- 不完整時顯示淺色 placeholder「請輸入完整的 Email」
-- 置於送出按鈕正上方，使用者送出前一定會看到
+| 欄位名 | 型別 | Nullable | 預設值 | Unique | PK | FK | 說明 |
+|---|---|---|---|---|---|---|---|
 
-### 自動填入 / 貼上的強回饋（兩個都做）
+**索引（Indexes）**：列出所有索引（透過 `pg_indexes` 查詢確認）
 
-當 `handleAccountChange` 偵測到完整 email（含 `@`）：
+**外鍵（Foreign Keys）**：來源欄位 → 目標表.欄位、ON DELETE / ON UPDATE 行為
 
-1. **確認卡套用 1.5 秒 `animate-pulse` + 品牌色閃爍**
-2. **跳出 Toast**：「已自動辨識您的 Email：xxx@yyy.com」
-3. 自動 scroll 到確認卡位置（確保 autofill 後使用者看到）
+**CHECK 約束**：若有
 
-如果使用者在「快速選擇網域」分頁貼上完整 email，且網域不在預設清單，**自動切換到「自行輸入 Email」分頁**並填入完整 email（不再切到 custom chip）。
+**RLS 政策**：政策名稱、操作（SELECT/INSERT/UPDATE/DELETE）、角色、USING / WITH CHECK 表達式、實務意義
 
-### 取代「送出前確認」的防 typo 機制
+**Triggers**：列出綁在此表的 trigger
 
-由於不做 popup，改用**輸入時即時提示**：
+### 3. 資料庫函式（Functions）
 
-- 偵測常見 typo 網域（`gmial.com` / `gamil.com` / `yahoo.cm` / `hotnail.com` / `outlok.com` 等）
-- 在確認卡下方顯示淺色提示：「您是不是想輸入 `gmail.com`？[點此修正]」
-- 點擊後一鍵替換，不打斷流程
-- 維護一個小型 typo → 正確網域的 mapping table（約 15 組常見錯字）
+- `update_updated_at_column()`：用途、語言、SECURITY 模式
+- `assign_coupons_to_participant()`：用途、執行時機、邏輯流程（讀規則表 → 依規則數量產生唯一碼 → 寫入 coupons）
 
-這比 popup 更好：使用者不需要多一步點擊，但 typo 一定會被提示。
+### 4. Triggers 總覽
 
----
+從 `information_schema.triggers` 撈出實際存在的 trigger（目前 `<db-triggers>` 顯示為空，但 `assign_coupons_to_participant` 是 trigger function，需驗證是否真的有掛上）。
 
-## 二、i18n 文案新增
+### 5. Enums / Custom Types
 
-`src/locales/{zh,en,ja,ko}.json` `welcome` 區塊新增：
+目前無，明確標註「無自訂型別」。
 
-- `tabQuick`：「快速選擇網域」
-- `tabFull`：「自行輸入 Email」
-- `notifyAt`：「中獎將以此 Email 通知您」
-- `placeholder`：「請輸入完整的 Email」
-- `autofilled`：「已自動辨識您的 Email」
-- `typoSuggestion`：「您是不是想輸入 {{domain}}？」
-- `typoFix`：「點此修正」
-- `fullEmailLabel`：「Email 地址」
-- `notCommonDomain`：「不是常用網域？切換到「自行輸入 Email」」
+### 6. Storage Buckets
+
+無。
+
+### 7. 已知資料完整性風險（提醒區）
+
+- `coupons.email` nullable + FK → 未指派的優惠券允許 email 為 NULL
+- `lottery_entries.tn_number` 沒有 unique 約束（從 schema 看起來），但 `api.ts` 依賴 `23505` 判斷重複 → **需驗證是否有 unique index**
+- RLS 全部開放 `public` 讀寫 → 上線前需收緊
+- `participants` 沒有 DELETE policy → 無法刪除參與者
+
+### 8. 與前端 / API 對應
+
+附上 `src/lib/api.ts` 中各 API 對應到哪張表 / 哪些欄位的對照表，方便日後切換到自家後端 API 時照樣實作。
 
 ---
 
-## 三、修改檔案清單
+## 執行步驟
 
-- `src/routes/$lang.welcome.tsx`（主要改動：加 Tabs、確認卡升級、typo 偵測、autofill toast/閃爍、scroll、移除 chip 內 custom 按鈕）
-- `src/locales/zh.json`、`en.json`、`ja.json`、`ko.json`（新增 9 個 key）
+1. 用 `supabase--read_query` 執行以下查詢補完目前 schema 文件缺少的資訊：
+   - `information_schema.table_constraints` + `key_column_usage`：抓 PK / UNIQUE / FK 約束
+   - `pg_indexes`：抓所有索引（特別確認 `lottery_entries.tn_number` 是否有 unique index）
+   - `information_schema.triggers`：抓真正掛載的 trigger
+   - `information_schema.check_constraints`：抓 CHECK 約束
+2. 結合 `<supabase-tables>` 已知資訊 + 上述查詢結果，撰寫 `docs/DATABASE_SCHEMA.md`
+3. 文件以繁體中文撰寫（與專案其他文件風格一致），欄位名 / 型別 / SQL 保留英文
 
-需引入 `@/components/ui/tabs`（已存在）、`lucide-react` 的 `CheckCircle2`、`AlertCircle`。
+## 不會動到
 
----
-
-## 四、不會動到的部分
-
-- `getOrCreateParticipant` API 邏輯
-- `LoadingOverlay` 流程（保留現有）
-- `getDeviceId` / `setStoredEmail`
-- 路由結構、其他頁面
+- 任何資料表結構（純文件產出）
+- 任何 RLS / 函式 / Trigger
+- 任何前端程式碼
