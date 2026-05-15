@@ -30,23 +30,11 @@ const MOCK_COUPONS: Coupon[] = [
     coupon_serialnum: "99W1011800000010",
     email: null,
     used_date: null,
-    leading_code: "99",
-    issue_source: "W",
-    usage_category: "1",
-    type_serial: "01",
-    serial_number: "180000010",
-    check_digit: "0",
   },
   {
     coupon_serialnum: "99E2021800000020",
     email: null,
     used_date: null,
-    leading_code: "99",
-    issue_source: "E",
-    usage_category: "2",
-    type_serial: "02",
-    serial_number: "180000020",
-    check_digit: "0",
   },
 ];
 
