@@ -214,12 +214,8 @@ function CouponsPage() {
             <Skeleton className="h-24 w-full rounded-xl" />
           </>
         )}
-        {coupons && coupons.length === 0 && (
-          <div className="rounded-lg border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">
-            {t("coupons.empty")}
-          </div>
-        )}
-        {coupons?.map((c) => (
+        {/* ⚠️ MOCK：票券中台 API 接通前，若使用者沒有已領券，顯示 demo 卡片 */}
+        {coupons && (coupons.length === 0 ? MOCK_COUPONS : coupons).map((c) => (
           <div
             key={c.coupon_code}
             className="overflow-hidden rounded-xl border border-border bg-card"
