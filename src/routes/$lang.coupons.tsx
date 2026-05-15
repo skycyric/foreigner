@@ -197,7 +197,7 @@ function CouponsPage() {
           >
             <div className="flex items-center gap-2 border-b border-border bg-muted/40 px-4 py-2.5 text-sm font-medium text-foreground">
               <Ticket className="h-4 w-4" strokeWidth={1.75} />
-              <span>{c.note ?? "Discount Coupon"}</span>
+              <span>{couponLabel(c)}</span>
             </div>
             <div className="bg-white px-2 py-3">
               <Barcode value={c.coupon_code} />
