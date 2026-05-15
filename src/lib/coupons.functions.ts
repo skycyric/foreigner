@@ -72,12 +72,12 @@ export const claimCoupon = createServerFn({ method: "POST" })
     }
 
     const { error } = await supabaseAdmin.from("coupons").insert({
-      coupon_code: couponCode,
+      coupon_serialnum: couponCode,
       email: data.email,
     });
     if (error) throw new Error(error.message);
 
-    return { coupon_code: couponCode };
+    return { coupon_serialnum: couponCode };
   });
 
 /**
@@ -86,15 +86,15 @@ export const claimCoupon = createServerFn({ method: "POST" })
 export const markCouponUsed = createServerFn({ method: "POST" })
   .inputValidator(
     z.object({
-      coupon_code: z.string().regex(COUPON_CODE_REGEX),
-      used_at: z.string().datetime().optional(),
+      coupon_serialnum: z.string().regex(COUPON_CODE_REGEX),
+      used_date: z.string().datetime().optional(),
     }).parse,
   )
   .handler(async ({ data }) => {
     const { error } = await supabaseAdmin
       .from("coupons")
-      .update({ used_at: data.used_at ?? new Date().toISOString() })
-      .eq("coupon_code", data.coupon_code);
+      .update({ used_date: data.used_date ?? new Date().toISOString() })
+      .eq("coupon_serialnum", data.coupon_serialnum);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
