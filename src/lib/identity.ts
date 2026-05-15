@@ -18,9 +18,32 @@ function deleteCookie(name: string) {
   document.cookie = `${name}=; Path=/; Max-Age=0; SameSite=Lax`;
 }
 
+function getCookie(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith(`${name}=`));
+  if (!match) return null;
+  const raw = match.slice(name.length + 1);
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
+}
+
 export function getStoredEmail(): string | null {
   if (typeof window === "undefined") return null;
-  return window.localStorage.getItem(EMAIL_KEY);
+  // Cookie 為主信號源
+  const fromCookie = getCookie(EMAIL_KEY);
+  if (fromCookie) return fromCookie;
+  // localStorage 備援；若有則回填 cookie，讓後續判斷與 SSR 一致
+  const fromLs = window.localStorage.getItem(EMAIL_KEY);
+  if (fromLs) {
+    setCookie(EMAIL_KEY, fromLs);
+    return fromLs;
+  }
+  return null;
 }
 
 export function setStoredEmail(email: string) {
