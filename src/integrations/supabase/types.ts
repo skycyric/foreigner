@@ -16,39 +16,21 @@ export type Database = {
     Tables: {
       coupons: {
         Row: {
-          check_digit: string | null
           coupon_serialnum: string
           created_at: string
           email: string
-          issue_source: string | null
-          leading_code: string | null
-          serial_number: string | null
-          type_serial: string | null
-          usage_category: string | null
           used_date: string | null
         }
         Insert: {
-          check_digit?: string | null
           coupon_serialnum: string
           created_at?: string
           email: string
-          issue_source?: string | null
-          leading_code?: string | null
-          serial_number?: string | null
-          type_serial?: string | null
-          usage_category?: string | null
           used_date?: string | null
         }
         Update: {
-          check_digit?: string | null
           coupon_serialnum?: string
           created_at?: string
           email?: string
-          issue_source?: string | null
-          leading_code?: string | null
-          serial_number?: string | null
-          type_serial?: string | null
-          usage_category?: string | null
           used_date?: string | null
         }
         Relationships: [

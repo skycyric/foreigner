@@ -120,12 +120,6 @@
 | `email` | `text` | NO | — | FK → `participants.email` ON DELETE CASCADE |
 | `used_date` | `timestamptz` | YES | — | 使用時間（中台 webhook 後 UPDATE） |
 | `created_at` | `timestamptz` | NO | `now()` | |
-| `leading_code` | `char(2)` | — | _generated_ | substring 1-2，由 `coupon_serialnum` 自動拆解 |
-| `issue_source` | `char(1)` | — | _generated_ | substring 3 |
-| `usage_category` | `char(1)` | — | _generated_ | substring 4 |
-| `type_serial` | `char(2)` | — | _generated_ | substring 5-6 |
-| `serial_number` | `char(9)` | — | _generated_ | substring 7-15 |
-| `check_digit` | `char(1)` | — | _generated_ | substring 16 |
 
 > generated columns 為 `STORED`，由 PostgreSQL 在 INSERT/UPDATE 時自動依 `coupon_serialnum`
 > 拆解，不可手動寫入。
@@ -317,12 +311,6 @@ CREATE TABLE public.coupons (
   email            text NOT NULL REFERENCES public.participants(email) ON DELETE CASCADE,
   used_date          timestamptz,
   created_at       timestamptz NOT NULL DEFAULT now(),
-  leading_code     char(2) GENERATED ALWAYS AS (substring(coupon_serialnum FROM 1 FOR 2)) STORED,
-  issue_source     char(1) GENERATED ALWAYS AS (substring(coupon_serialnum FROM 3 FOR 1)) STORED,
-  usage_category   char(1) GENERATED ALWAYS AS (substring(coupon_serialnum FROM 4 FOR 1)) STORED,
-  type_serial      char(2) GENERATED ALWAYS AS (substring(coupon_serialnum FROM 5 FOR 2)) STORED,
-  serial_number    char(9) GENERATED ALWAYS AS (substring(coupon_serialnum FROM 7 FOR 9)) STORED,
-  check_digit      char(1) GENERATED ALWAYS AS (substring(coupon_serialnum FROM 16 FOR 1)) STORED,
   CONSTRAINT coupons_code_format_chk
     CHECK (coupon_serialnum ~ '^[0-9]{2}[WER][1-7][0-9]{11}$')
 );

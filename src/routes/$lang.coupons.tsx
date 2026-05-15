@@ -14,9 +14,10 @@ import { getSsrIdentity } from "@/lib/server-identity";
 const COUPONS_CACHE_PREFIX = "lucky_coupons_cache_";
 
 // 依 16 碼結構推導顯示名稱（正式資料應由票券中台 API 帶回）
+// 結構：[Leading 2][issue_source 1: W/E/R][usage_category 1: 1-7][...]
 function couponLabel(c: Coupon): string {
-  const src = c.issue_source ?? "";
-  const cat = c.usage_category ?? "";
+  const src = c.coupon_serialnum?.charAt(2) ?? "";
+  const cat = c.coupon_serialnum?.charAt(3) ?? "";
   if (src === "W") return `會員酬賓券 ${cat}`;
   if (src === "E") return `活動券 ${cat}`;
   if (src === "R") return `兌換券 ${cat}`;
@@ -30,23 +31,11 @@ const MOCK_COUPONS: Coupon[] = [
     coupon_serialnum: "99W1011800000010",
     email: null,
     used_date: null,
-    leading_code: "99",
-    issue_source: "W",
-    usage_category: "1",
-    type_serial: "01",
-    serial_number: "180000010",
-    check_digit: "0",
   },
   {
     coupon_serialnum: "99E2021800000020",
     email: null,
     used_date: null,
-    leading_code: "99",
-    issue_source: "E",
-    usage_category: "2",
-    type_serial: "02",
-    serial_number: "180000020",
-    check_digit: "0",
   },
 ];
 
