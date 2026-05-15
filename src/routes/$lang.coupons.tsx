@@ -27,7 +27,7 @@ function couponLabel(c: Coupon): string {
 // 16 碼格式：[Leading 2][W/E/R][1-7][2 type_serial][9 serial][1 check]
 const MOCK_COUPONS: Coupon[] = [
   {
-    coupon_code: "99W101180000010",
+    coupon_code: "99W1011800000010",
     email: null,
     assigned_at: null,
     used_at: null,
@@ -39,7 +39,7 @@ const MOCK_COUPONS: Coupon[] = [
     check_digit: "0",
   },
   {
-    coupon_code: "99E202180000020",
+    coupon_code: "99E2021800000020",
     email: null,
     assigned_at: null,
     used_at: null,
