@@ -14,9 +14,10 @@ import { getSsrIdentity } from "@/lib/server-identity";
 const COUPONS_CACHE_PREFIX = "lucky_coupons_cache_";
 
 // 依 16 碼結構推導顯示名稱（正式資料應由票券中台 API 帶回）
+// 結構：[Leading 2][issue_source 1: W/E/R][usage_category 1: 1-7][...]
 function couponLabel(c: Coupon): string {
-  const src = c.issue_source ?? "";
-  const cat = c.usage_category ?? "";
+  const src = c.coupon_serialnum?.charAt(2) ?? "";
+  const cat = c.coupon_serialnum?.charAt(3) ?? "";
   if (src === "W") return `會員酬賓券 ${cat}`;
   if (src === "E") return `活動券 ${cat}`;
   if (src === "R") return `兌換券 ${cat}`;
