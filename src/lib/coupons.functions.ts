@@ -9,8 +9,10 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-/** 16 碼券碼格式：[Leading 2 數字][W/E/R][1-7][11 數字] */
-const COUPON_CODE_REGEX = /^[0-9]{2}[WER][1-7][0-9]{11}$/;
+/** 16 碼券碼格式：[Leading 2 數字][W/E/R][1-7][12 數字]
+ *  = 2 leading + 1 source + 1 category + 2 type_serial + 9 serial + 1 check
+ */
+const COUPON_CODE_REGEX = /^[0-9]{2}[WER][1-7][0-9]{12}$/;
 
 export interface AvailableCoupon {
   template_id: string;
@@ -61,6 +63,7 @@ export const claimCoupon = createServerFn({ method: "POST" })
     const mockSource = data.template_id.includes("w") ? "W" : "E";
     const mockCategory = data.template_id.includes("w") ? "1" : "2";
     const serial = String(Date.now()).slice(-9).padStart(9, "0");
+    // 99 (2) + source (1) + category (1) + 01 type_serial (2) + serial (9) + 0 check (1) = 16
     const couponCode =
       "99" + mockSource + mockCategory + "01" + serial + "0";
 
