@@ -37,7 +37,13 @@ export interface Coupon {
   email: string | null;
   assigned_at: string | null;
   used_at: string | null;
-  note: string | null;
+  // 16 碼自動拆解欄位（由 DB generated columns 提供）
+  leading_code?: string | null;     // 99/98/97/96 = iRich/ERP/POS/宜睿
+  issue_source?: string | null;     // W/E/R
+  usage_category?: string | null;   // 1-7
+  type_serial?: string | null;
+  serial_number?: string | null;
+  check_digit?: string | null;
 }
 
 export interface Winner {
