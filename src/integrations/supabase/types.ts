@@ -14,59 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
-      coupon_allocation_rules: {
-        Row: {
-          coupon_prefix: string
-          created_at: string
-          id: string
-          is_active: boolean
-          note: string | null
-          quantity_per_participant: number
-          rule_name: string
-        }
-        Insert: {
-          coupon_prefix: string
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          note?: string | null
-          quantity_per_participant?: number
-          rule_name: string
-        }
-        Update: {
-          coupon_prefix?: string
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          note?: string | null
-          quantity_per_participant?: number
-          rule_name?: string
-        }
-        Relationships: []
-      }
       coupons: {
         Row: {
-          assigned_at: string | null
+          assigned_at: string
+          check_digit: string | null
           coupon_code: string
           created_at: string
-          email: string | null
-          note: string | null
+          email: string
+          issue_source: string | null
+          leading_code: string | null
+          serial_number: string | null
+          type_serial: string | null
+          usage_category: string | null
           used_at: string | null
         }
         Insert: {
-          assigned_at?: string | null
+          assigned_at?: string
+          check_digit?: string | null
           coupon_code: string
           created_at?: string
-          email?: string | null
-          note?: string | null
+          email: string
+          issue_source?: string | null
+          leading_code?: string | null
+          serial_number?: string | null
+          type_serial?: string | null
+          usage_category?: string | null
           used_at?: string | null
         }
         Update: {
-          assigned_at?: string | null
+          assigned_at?: string
+          check_digit?: string | null
           coupon_code?: string
           created_at?: string
-          email?: string | null
-          note?: string | null
+          email?: string
+          issue_source?: string | null
+          leading_code?: string | null
+          serial_number?: string | null
+          type_serial?: string | null
+          usage_category?: string | null
           used_at?: string | null
         }
         Relationships: [

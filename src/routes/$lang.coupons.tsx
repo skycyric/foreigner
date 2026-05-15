@@ -13,6 +13,45 @@ import { getSsrIdentity } from "@/lib/server-identity";
 
 const COUPONS_CACHE_PREFIX = "lucky_coupons_cache_";
 
+// 依 16 碼結構推導顯示名稱（正式資料應由票券中台 API 帶回）
+function couponLabel(c: Coupon): string {
+  const src = c.issue_source ?? "";
+  const cat = c.usage_category ?? "";
+  if (src === "W") return `會員酬賓券 ${cat}`;
+  if (src === "E") return `活動券 ${cat}`;
+  if (src === "R") return `兌換券 ${cat}`;
+  return "Discount Coupon";
+}
+
+// ⚠️ MOCK：票券中台 API 接通前用於 UI 測試
+// 16 碼格式：[Leading 2][W/E/R][1-7][2 type_serial][9 serial][1 check]
+const MOCK_COUPONS: Coupon[] = [
+  {
+    coupon_code: "99W1011800000010",
+    email: null,
+    assigned_at: null,
+    used_at: null,
+    leading_code: "99",
+    issue_source: "W",
+    usage_category: "1",
+    type_serial: "01",
+    serial_number: "180000010",
+    check_digit: "0",
+  },
+  {
+    coupon_code: "99E2021800000020",
+    email: null,
+    assigned_at: null,
+    used_at: null,
+    leading_code: "99",
+    issue_source: "E",
+    usage_category: "2",
+    type_serial: "02",
+    serial_number: "180000020",
+    check_digit: "0",
+  },
+];
+
 export const Route = createFileRoute("/$lang/coupons")({
   head: ({ params }) => ({
     meta: [{ title: `My Coupons — Lucky Draw (${params.lang})` }],
@@ -175,19 +214,15 @@ function CouponsPage() {
             <Skeleton className="h-24 w-full rounded-xl" />
           </>
         )}
-        {coupons && coupons.length === 0 && (
-          <div className="rounded-lg border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">
-            {t("coupons.empty")}
-          </div>
-        )}
-        {coupons?.map((c) => (
+        {/* ⚠️ MOCK：票券中台 API 接通前，若使用者沒有已領券，顯示 demo 卡片 */}
+        {coupons && (coupons.length === 0 ? MOCK_COUPONS : coupons).map((c) => (
           <div
             key={c.coupon_code}
             className="overflow-hidden rounded-xl border border-border bg-card"
           >
             <div className="flex items-center gap-2 border-b border-border bg-muted/40 px-4 py-2.5 text-sm font-medium text-foreground">
               <Ticket className="h-4 w-4" strokeWidth={1.75} />
-              <span>{c.note ?? "Discount Coupon"}</span>
+              <span>{couponLabel(c)}</span>
             </div>
             <div className="bg-white px-2 py-3">
               <Barcode value={c.coupon_code} />
