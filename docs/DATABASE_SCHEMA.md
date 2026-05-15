@@ -235,7 +235,7 @@ coupons_code_format_chk:
 | R6 | `lottery_entries.source` 無 CHECK | 低 | 前端可寫入任意字串 | 可加 `CHECK (source IN ('manual','qr'))` |
 | R7 | 測試模式 TN 後綴繞過 | **高** | `src/lib/api.ts` 在 `isTestTn` 為真時會繞過唯一檢查 | 上線前移除 |
 | R8 | 票券中台 API 不可用時的降級 | 中 | Lazy 領券完全依賴中台 | 中台 timeout / 5xx 時前端應顯示「暫時無法領取，請稍後再試」，不要寫入空券碼 |
-| R9 | `coupons` UPDATE 政策過寬 | 中 | 目前任何人可改任何欄位（包含 `assigned_at`、`email`） | 加欄位層級 trigger 或改為 `auth.uid()` 並只允許 `used_date` |
+| R9 | `coupons` UPDATE 政策過寬 | 中 | 目前任何人可改任何欄位（包含 `email`） | 加欄位層級 trigger 或改為 `auth.uid()` 並只允許 `used_date` |
 
 ---
 
@@ -315,7 +315,6 @@ CREATE INDEX idx_lottery_email ON public.lottery_entries(email);
 CREATE TABLE public.coupons (
   coupon_serialnum      char(16) PRIMARY KEY,
   email            text NOT NULL REFERENCES public.participants(email) ON DELETE CASCADE,
-  assigned_at      timestamptz NOT NULL DEFAULT now(),
   used_date          timestamptz,
   created_at       timestamptz NOT NULL DEFAULT now(),
   leading_code     char(2) GENERATED ALWAYS AS (substring(coupon_serialnum FROM 1 FOR 2)) STORED,
