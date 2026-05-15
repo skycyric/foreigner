@@ -33,10 +33,9 @@ export class InvalidTnError extends Error {
 }
 
 export interface Coupon {
-  coupon_code: string;
+  coupon_serialnum: string;
   email: string | null;
-  assigned_at: string | null;
-  used_at: string | null;
+  used_date: string | null;
   // 16 碼自動拆解欄位（由 DB generated columns 提供）
   leading_code?: string | null;     // 99/98/97/96 = iRich/ERP/POS/宜睿
   issue_source?: string | null;     // W/E/R

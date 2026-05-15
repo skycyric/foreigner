@@ -27,10 +27,9 @@ function couponLabel(c: Coupon): string {
 // 16 碼格式：[Leading 2][W/E/R][1-7][2 type_serial][9 serial][1 check]
 const MOCK_COUPONS: Coupon[] = [
   {
-    coupon_code: "99W1011800000010",
+    coupon_serialnum: "99W1011800000010",
     email: null,
-    assigned_at: null,
-    used_at: null,
+    used_date: null,
     leading_code: "99",
     issue_source: "W",
     usage_category: "1",
@@ -39,10 +38,9 @@ const MOCK_COUPONS: Coupon[] = [
     check_digit: "0",
   },
   {
-    coupon_code: "99E2021800000020",
+    coupon_serialnum: "99E2021800000020",
     email: null,
-    assigned_at: null,
-    used_at: null,
+    used_date: null,
     leading_code: "99",
     issue_source: "E",
     usage_category: "2",
@@ -217,7 +215,7 @@ function CouponsPage() {
         {/* ⚠️ MOCK：票券中台 API 接通前，若使用者沒有已領券，顯示 demo 卡片 */}
         {coupons && (coupons.length === 0 ? MOCK_COUPONS : coupons).map((c) => (
           <div
-            key={c.coupon_code}
+            key={c.coupon_serialnum}
             className="overflow-hidden rounded-xl border border-border bg-card"
           >
             <div className="flex items-center gap-2 border-b border-border bg-muted/40 px-4 py-2.5 text-sm font-medium text-foreground">
@@ -225,7 +223,7 @@ function CouponsPage() {
               <span>{couponLabel(c)}</span>
             </div>
             <div className="bg-white px-2 py-3">
-              <Barcode value={c.coupon_code} />
+              <Barcode value={c.coupon_serialnum} />
             </div>
           </div>
         ))}

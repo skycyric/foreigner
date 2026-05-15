@@ -48,10 +48,10 @@
    → server function 呼叫中台「該 email 可領哪些券」
 3. 使用者按「領取」按鈕
    → 前端呼叫 server function `claimCoupon({ email, template_id })`
-   → server function 呼叫中台領券 API → 拿到 16 碼 coupon_code
+   → server function 呼叫中台領券 API → 拿到 16 碼 coupon_serialnum
    → INSERT 至本地 coupons 表
 4. 使用者使用券
-   → 中台 webhook（或下次查詢時）→ UPDATE coupons.used_at
+   → 中台 webhook（或下次查詢時）→ UPDATE coupons.used_date
 5. 使用者掃描 / 手動輸入 TN → INSERT lottery_entries
    （tn_number UNIQUE，重複會回 23505）
 ```
@@ -110,25 +110,24 @@
 
 - **用途**：使用者**領取／使用紀錄**。本表**不**鏡像券細節（折扣、效期、券種名稱），
   那些一律由票券中台 API 提供。
-- **Primary Key**：`coupon_code`（固定 16 碼，由中台領券 API 回傳）
+- **Primary Key**：`coupon_serialnum`（固定 16 碼，由中台領券 API 回傳）
 
 #### 欄位規格
 
 | 欄位名 | 型別 | Nullable | 預設值 | 說明 |
 |---|---|---|---|---|
-| `coupon_code` | `char(16)` | NO | — | 主鍵，16 碼券號（見下方結構） |
+| `coupon_serialnum` | `char(16)` | NO | — | 主鍵，16 碼券號（見下方結構） |
 | `email` | `text` | NO | — | FK → `participants.email` ON DELETE CASCADE |
-| `assigned_at` | `timestamptz` | NO | `now()` | 領取時間（INSERT 即建立） |
-| `used_at` | `timestamptz` | YES | — | 使用時間（中台 webhook 後 UPDATE） |
+| `used_date` | `timestamptz` | YES | — | 使用時間（中台 webhook 後 UPDATE） |
 | `created_at` | `timestamptz` | NO | `now()` | |
-| `leading_code` | `char(2)` | — | _generated_ | substring 1-2，由 `coupon_code` 自動拆解 |
+| `leading_code` | `char(2)` | — | _generated_ | substring 1-2，由 `coupon_serialnum` 自動拆解 |
 | `issue_source` | `char(1)` | — | _generated_ | substring 3 |
 | `usage_category` | `char(1)` | — | _generated_ | substring 4 |
 | `type_serial` | `char(2)` | — | _generated_ | substring 5-6 |
 | `serial_number` | `char(9)` | — | _generated_ | substring 7-15 |
 | `check_digit` | `char(1)` | — | _generated_ | substring 16 |
 
-> generated columns 為 `STORED`，由 PostgreSQL 在 INSERT/UPDATE 時自動依 `coupon_code`
+> generated columns 為 `STORED`，由 PostgreSQL 在 INSERT/UPDATE 時自動依 `coupon_serialnum`
 > 拆解，不可手動寫入。
 
 #### 16 碼券號結構（昇恆昌規則）
@@ -148,16 +147,16 @@
 
 ```sql
 coupons_code_format_chk:
-  coupon_code ~ '^[0-9]{2}[WER][1-7][0-9]{11}$'
+  coupon_serialnum ~ '^[0-9]{2}[WER][1-7][0-9]{11}$'
 ```
 
 #### 索引
 
 | Index 名稱 | 欄位 | 類型 |
 |---|---|---|
-| `coupons_pkey` | `coupon_code` | UNIQUE (PK) |
+| `coupons_pkey` | `coupon_serialnum` | UNIQUE (PK) |
 | `idx_coupons_email` | `email` | btree |
-| `idx_coupons_email_used` | `(email, used_at)` | btree |
+| `idx_coupons_email_used` | `(email, used_date)` | btree |
 
 #### 外鍵
 
@@ -171,9 +170,9 @@ coupons_code_format_chk:
 |---|---|---|---|
 | Anyone can read coupons | SELECT | public | `USING (true)` |
 | Anyone can insert coupon claim | INSERT | public | `WITH CHECK (true)`（由 `claimCoupon` server fn 呼叫） |
-| Anyone can update coupon used_at | UPDATE | public | `USING (true) WITH CHECK (true)`（由 `markCouponUsed` server fn 呼叫） |
+| Anyone can update coupon used_date | UPDATE | public | `USING (true) WITH CHECK (true)`（由 `markCouponUsed` server fn 呼叫） |
 
-> ⚠️ 寫入路徑目前依賴 server function 自律（並未限制只能改 `used_at`）。
+> ⚠️ 寫入路徑目前依賴 server function 自律（並未限制只能改 `used_date`）。
 > 上線前需改為 `auth.uid()` 收緊 + 欄位層級限制（見 R3）。
 
 ---
@@ -236,7 +235,7 @@ coupons_code_format_chk:
 | R6 | `lottery_entries.source` 無 CHECK | 低 | 前端可寫入任意字串 | 可加 `CHECK (source IN ('manual','qr'))` |
 | R7 | 測試模式 TN 後綴繞過 | **高** | `src/lib/api.ts` 在 `isTestTn` 為真時會繞過唯一檢查 | 上線前移除 |
 | R8 | 票券中台 API 不可用時的降級 | 中 | Lazy 領券完全依賴中台 | 中台 timeout / 5xx 時前端應顯示「暫時無法領取，請稍後再試」，不要寫入空券碼 |
-| R9 | `coupons` UPDATE 政策過寬 | 中 | 目前任何人可改任何欄位（包含 `assigned_at`、`email`） | 加欄位層級 trigger 或改為 `auth.uid()` 並只允許 `used_at` |
+| R9 | `coupons` UPDATE 政策過寬 | 中 | 目前任何人可改任何欄位（包含 `email`） | 加欄位層級 trigger 或改為 `auth.uid()` 並只允許 `used_date` |
 
 ---
 
@@ -250,7 +249,7 @@ coupons_code_format_chk:
 | `getWinners()` | `src/lib/api.ts` | SELECT | `winners` ORDER BY rank |
 | `listAvailableCoupons()` | `src/lib/coupons.functions.ts` | 中台 GET | （TODO）`{COUPON_MIDDLEWARE_BASE_URL}/coupons/available?email=` |
 | `claimCoupon()` | `src/lib/coupons.functions.ts` | 中台 POST + 本地 INSERT | （TODO）`{COUPON_MIDDLEWARE_BASE_URL}/coupons/claim` → INSERT `coupons` |
-| `markCouponUsed()` | `src/lib/coupons.functions.ts` | UPDATE | `coupons.used_at` |
+| `markCouponUsed()` | `src/lib/coupons.functions.ts` | UPDATE | `coupons.used_date` |
 
 ---
 
@@ -271,20 +270,20 @@ GET  {BASE_URL}/coupons/available?email=...
 
 POST {BASE_URL}/coupons/claim
   body: { email, template_id }
-  → 200 { coupon_code: "16碼" }
+  → 200 { coupon_serialnum: "16碼" }
   → 409 已領取
   → 410 已售罄
 
 POST {BASE_URL}/webhooks/coupon-used   ← 由中台 call 我們
-  body: { coupon_code, used_at }
-  → 我們的 server route 收到後 UPDATE coupons.used_at
+  body: { coupon_serialnum, used_date }
+  → 我們的 server route 收到後 UPDATE coupons.used_date
 ```
 
 ### 錯誤處理原則
 
 - 中台 4xx → 回傳明確錯誤碼給前端，不寫入 DB
 - 中台 5xx / timeout → 回傳「暫時無法領取」，前端顯示重試按鈕
-- 中台回傳的 `coupon_code` 必須符合 `^[0-9]{2}[WER][1-7][0-9]{11}$`，否則拒絕寫入
+- 中台回傳的 `coupon_serialnum` 必須符合 `^[0-9]{2}[WER][1-7][0-9]{11}$`，否則拒絕寫入
 
 ---
 
@@ -314,22 +313,21 @@ CREATE INDEX idx_lottery_email ON public.lottery_entries(email);
 
 -- coupons（領取／使用紀錄；細節由中台 API 提供）
 CREATE TABLE public.coupons (
-  coupon_code      char(16) PRIMARY KEY,
+  coupon_serialnum      char(16) PRIMARY KEY,
   email            text NOT NULL REFERENCES public.participants(email) ON DELETE CASCADE,
-  assigned_at      timestamptz NOT NULL DEFAULT now(),
-  used_at          timestamptz,
+  used_date          timestamptz,
   created_at       timestamptz NOT NULL DEFAULT now(),
-  leading_code     char(2) GENERATED ALWAYS AS (substring(coupon_code FROM 1 FOR 2)) STORED,
-  issue_source     char(1) GENERATED ALWAYS AS (substring(coupon_code FROM 3 FOR 1)) STORED,
-  usage_category   char(1) GENERATED ALWAYS AS (substring(coupon_code FROM 4 FOR 1)) STORED,
-  type_serial      char(2) GENERATED ALWAYS AS (substring(coupon_code FROM 5 FOR 2)) STORED,
-  serial_number    char(9) GENERATED ALWAYS AS (substring(coupon_code FROM 7 FOR 9)) STORED,
-  check_digit      char(1) GENERATED ALWAYS AS (substring(coupon_code FROM 16 FOR 1)) STORED,
+  leading_code     char(2) GENERATED ALWAYS AS (substring(coupon_serialnum FROM 1 FOR 2)) STORED,
+  issue_source     char(1) GENERATED ALWAYS AS (substring(coupon_serialnum FROM 3 FOR 1)) STORED,
+  usage_category   char(1) GENERATED ALWAYS AS (substring(coupon_serialnum FROM 4 FOR 1)) STORED,
+  type_serial      char(2) GENERATED ALWAYS AS (substring(coupon_serialnum FROM 5 FOR 2)) STORED,
+  serial_number    char(9) GENERATED ALWAYS AS (substring(coupon_serialnum FROM 7 FOR 9)) STORED,
+  check_digit      char(1) GENERATED ALWAYS AS (substring(coupon_serialnum FROM 16 FOR 1)) STORED,
   CONSTRAINT coupons_code_format_chk
-    CHECK (coupon_code ~ '^[0-9]{2}[WER][1-7][0-9]{11}$')
+    CHECK (coupon_serialnum ~ '^[0-9]{2}[WER][1-7][0-9]{11}$')
 );
 CREATE INDEX idx_coupons_email      ON public.coupons(email);
-CREATE INDEX idx_coupons_email_used ON public.coupons(email, used_at);
+CREATE INDEX idx_coupons_email_used ON public.coupons(email, used_date);
 
 -- winners
 CREATE TABLE public.winners (
