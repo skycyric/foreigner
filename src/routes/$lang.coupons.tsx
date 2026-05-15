@@ -23,6 +23,35 @@ function couponLabel(c: Coupon): string {
   return "Discount Coupon";
 }
 
+// ⚠️ MOCK：票券中台 API 接通前用於 UI 測試
+// 16 碼格式：[Leading 2][W/E/R][1-7][2 type_serial][9 serial][1 check]
+const MOCK_COUPONS: Coupon[] = [
+  {
+    coupon_code: "99W101180000010",
+    email: null,
+    assigned_at: null,
+    used_at: null,
+    leading_code: "99",
+    issue_source: "W",
+    usage_category: "1",
+    type_serial: "01",
+    serial_number: "180000010",
+    check_digit: "0",
+  },
+  {
+    coupon_code: "99E202180000020",
+    email: null,
+    assigned_at: null,
+    used_at: null,
+    leading_code: "99",
+    issue_source: "E",
+    usage_category: "2",
+    type_serial: "02",
+    serial_number: "180000020",
+    check_digit: "0",
+  },
+];
+
 export const Route = createFileRoute("/$lang/coupons")({
   head: ({ params }) => ({
     meta: [{ title: `My Coupons — Lucky Draw (${params.lang})` }],
