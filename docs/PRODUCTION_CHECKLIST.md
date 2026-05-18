@@ -21,11 +21,11 @@ src/lib/test-mode.ts
   ```ts
   const tnToInsert = IS_TEST_MODE ? `${input.tn}__t${Date.now()}` : input.tn;
   // ...
-  tn_number: tnToInsert,
+  transaction_number: tnToInsert,
   ```
   改回：
   ```ts
-  tn_number: input.tn,
+  transaction_number: input.tn,
   ```
 
 ### 1.3 修改 `src/routes/$lang.result.tsx`
@@ -39,7 +39,7 @@ src/lib/test-mode.ts
 **⚠️ 請在正式 DB 執行一次**，清掉所有 dev 階段累積的測試單號：
 
 ```sql
-DELETE FROM lottery_entries WHERE tn_number LIKE '%\_\_t%' ESCAPE '\';
+DELETE FROM lottery_entries WHERE transaction_number LIKE '%\_\_t%' ESCAPE '\';
 ```
 
 說明：dev 模式下單號會被加上 `__t{timestamp}` 後綴，這條 SQL 會把所有此類測試資料全部刪除，正式單號（格式如 `AB1234567890`）不會被影響。
@@ -49,7 +49,7 @@ DELETE FROM lottery_entries WHERE tn_number LIKE '%\_\_t%' ESCAPE '\';
 ## 3. 驗證
 
 1. 執行 `npm run build`（或 production build 指令），確認沒有 import error
-2. 在 production 環境掃一筆真實 QR，到 DB 查詢 `lottery_entries`，確認 `tn_number` 沒有 `__t` 後綴
+2. 在 production 環境掃一筆真實 QR，到 DB 查詢 `lottery_entries`，確認 `transaction_number` 沒有 `__t` 後綴
 3. 嘗試重複掃同一張 → 應該要顯示「已使用」訊息（代表測試模式已正確關閉）
 
 ---

@@ -1,0 +1,1 @@
+ALTER TABLE public.lottery_entries RENAME COLUMN tn_number TO transaction_number;
