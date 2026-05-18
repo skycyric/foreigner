@@ -66,7 +66,8 @@ POST {BASE}/participants
   → 200 { email }
 
 POST {BASE}/lottery/submit
-  body: { tn, email, raw_payload?, source: "manual"|"qr" }
+  body: { tn, email, raw_payload?, transaction_time?, source: "manual"|"qr" }
+  // transaction_time: "YYYY-MM-DD 00:00:00"（由 QR payload 第二段 YYYYMMDD 解析）
   → 200 { id }
   → 409 { alreadyUsed: true }
   → 400 INVALID_TN_FORMAT

@@ -22,6 +22,7 @@ export type Database = {
           raw_payload: string | null
           source: string
           tn_number: string
+          transaction_time: string | null
         }
         Insert: {
           created_at?: string
@@ -30,6 +31,7 @@ export type Database = {
           raw_payload?: string | null
           source?: string
           tn_number: string
+          transaction_time?: string | null
         }
         Update: {
           created_at?: string
@@ -38,6 +40,7 @@ export type Database = {
           raw_payload?: string | null
           source?: string
           tn_number?: string
+          transaction_time?: string | null
         }
         Relationships: [
           {
