@@ -80,7 +80,7 @@ VITE_API_BASE_URL=https://your-api.everrich-group.com/api npm run build
 | `participants` | 報名者（PK: email；含 device_id, language） |
 | `coupons` | 折扣券（先匯入 coupon_code，再以 UPDATE 綁定 email） |
 | `coupon_allocation_rules` | 優惠券分配規則（依 coupon_prefix 決定每位參與者領幾張） |
-| `lottery_entries` | 抽獎登錄紀錄（tn_number unique） |
+| `lottery_entries` | 抽獎登錄紀錄（transaction_number unique） |
 | `winners` | 中獎名單（masked_email + rank + is_backup） |
 
 ## 部署到公司主機（events.everrich-group.com）
