@@ -11,11 +11,13 @@
 
 - **DBMS**：PostgreSQL（由 Lovable Cloud / Supabase 託管）
 - **Schema**：`public`
-- **資料表數量**：4 張
+- **資料表數量**：3 張
   - `participants`
   - `lottery_entries`
-  - `coupons`
   - `winners`
+
+> **優惠券**：3 組固定券號改存於前端常數 `src/lib/coupons.ts`，**不再使用資料表**。
+> 詳見本文件第 9 節「優惠券（前端常數）」。
 - **自訂型別 / Enums**：無
 - **Storage Buckets**：無
 
@@ -25,12 +27,10 @@
              participants
               (PK: email)
                   │
-      ┌───────────┴────────────┐
-      ▼                        ▼
-  lottery_entries           coupons
-  (FK: email →              (FK: email →
-   participants.email,       participants.email,
-   ON DELETE CASCADE)        ON DELETE CASCADE)
+                  ▼
+              lottery_entries
+              (FK: email → participants.email,
+               ON DELETE CASCADE)
 
   winners
   （獨立公告表，無關聯）
