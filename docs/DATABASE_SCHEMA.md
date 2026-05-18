@@ -52,8 +52,8 @@
    → INSERT 至本地 coupons 表
 4. 使用者使用券
    → 中台 webhook（或下次查詢時）→ UPDATE coupons.used_date
-5. 使用者掃描 / 手動輸入 TN → INSERT lottery_entries
-   （tn_number UNIQUE，重複會回 23505）
+ 5. 使用者掃描 / 手動輸入 TN → INSERT lottery_entries
+    （transaction_number UNIQUE，重複會回 23505）
 ```
 
 ---
@@ -90,14 +90,14 @@
 | 欄位名 | 型別 | Nullable | 預設值 | 說明 |
 |---|---|---|---|---|
 | `id` | `uuid` | NO | `gen_random_uuid()` | 主鍵 |
-| `tn_number` | `text` | NO | — | 交易券號（UNIQUE，格式由前端 `TN_FORMAT` 控制） |
+| `transaction_number` | `text` | NO | — | 交易券號（UNIQUE，格式由前端 `TN_FORMAT` 控制） |
 | `email` | `text` | NO | — | FK → `participants.email` ON DELETE CASCADE |
 | `raw_payload` | `text` | YES | — | QR 原始字串 |
 | `source` | `text` | NO | `'manual'` | `'manual'` / `'qr'`（無 CHECK） |
 | `transaction_time` | `timestamptz` | YES | — | QR payload 第二段日期（`YYYYMMDD`）解析後寫入，時間固定 `00:00:00`；手動輸入為 NULL |
 | `created_at` | `timestamptz` | NO | `now()` | |
 
-**索引**：`lottery_entries_pkey`、`lottery_entries_tn_number_key (UNIQUE)`、`idx_lottery_email`、`idx_lottery_transaction_time`
+**索引**：`lottery_entries_pkey`、`lottery_entries_transaction_number_key (UNIQUE)`、`idx_lottery_email`、`idx_lottery_transaction_time`
 
 **RLS**：SELECT / INSERT 皆 `public` 全開（⚠️ R3）
 
@@ -208,7 +208,7 @@ CREATE INDEX idx_participants_device ON public.participants(device_id);
 -- lottery_entries
 CREATE TABLE public.lottery_entries (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  tn_number   text NOT NULL UNIQUE,
+  transaction_number text NOT NULL UNIQUE,
   email       text NOT NULL REFERENCES public.participants(email) ON DELETE CASCADE,
   raw_payload text,
   source      text NOT NULL DEFAULT 'manual',
