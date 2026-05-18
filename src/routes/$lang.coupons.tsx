@@ -1,169 +1,52 @@
-import { createFileRoute, useNavigate, useParams, Link } from "@tanstack/react-router";
+import { createFileRoute, useParams, Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { useEffect, useRef, useState } from "react";
-import JsBarcode from "jsbarcode";
+import { useEffect, useState } from "react";
+import QRCode from "qrcode";
 import { ScanLine, Keyboard, Trophy, Ticket } from "lucide-react";
 import { PageShell } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
-import { Skeleton } from "@/components/ui/skeleton";
-import { api, type Coupon } from "@/lib/api";
-import { clearStoredEmail, getStoredEmail } from "@/lib/device";
-import { getSsrIdentity } from "@/lib/server-identity";
-
-const COUPONS_CACHE_PREFIX = "lucky_coupons_cache_";
-
-// 依 16 碼結構推導顯示名稱（正式資料應由票券中台 API 帶回）
-// 結構：[Leading 2][issue_source 1: W/E/R][usage_category 1: 1-7][...]
-function couponLabel(c: Coupon): string {
-  const src = c.coupon_serialnum?.charAt(2) ?? "";
-  const cat = c.coupon_serialnum?.charAt(3) ?? "";
-  if (src === "W") return `會員酬賓券 ${cat}`;
-  if (src === "E") return `活動券 ${cat}`;
-  if (src === "R") return `兌換券 ${cat}`;
-  return "Discount Coupon";
-}
-
-// ⚠️ MOCK：票券中台 API 接通前用於 UI 測試
-// 16 碼格式：[Leading 2][W/E/R][1-7][2 type_serial][9 serial][1 check]
-const MOCK_COUPONS: Coupon[] = [
-  {
-    coupon_serialnum: "99W1011800000010",
-    email: null,
-    used_date: null,
-  },
-  {
-    coupon_serialnum: "99E2021800000020",
-    email: null,
-    used_date: null,
-  },
-];
+import { ACTIVITY_COUPONS } from "@/lib/coupons";
 
 export const Route = createFileRoute("/$lang/coupons")({
   head: ({ params }) => ({
     meta: [{ title: `My Coupons — Lucky Draw (${params.lang})` }],
   }),
-  // SSR loader：用 cookie 直接預載券清單，HTML 直接帶資料下來
-  loader: async () => {
-    if (typeof window !== "undefined") {
-      // client 端不在 loader 抓（會在 component 用 cache + 背景 refresh）
-      return { ssrEmail: null as string | null, ssrCoupons: null as Coupon[] | null };
-    }
-    try {
-      const { email } = await getSsrIdentity();
-      if (!email) return { ssrEmail: null, ssrCoupons: null };
-      const coupons = await api.getMyCoupons({ email });
-      return { ssrEmail: email, ssrCoupons: coupons };
-    } catch (e) {
-      console.error("coupons SSR loader failed", e);
-      return { ssrEmail: null, ssrCoupons: null };
-    }
-  },
   component: CouponsPage,
 });
 
-function Barcode({ value }: { value: string }) {
-  const ref = useRef<SVGSVGElement>(null);
+function CouponQR({ value }: { value: string }) {
+  const [src, setSrc] = useState<string>("");
   useEffect(() => {
-    if (!ref.current) return;
-    try {
-      JsBarcode(ref.current, value, {
-        format: "CODE128",
-        displayValue: true,
-        fontSize: 14,
-        height: 70,
-        margin: 8,
-        background: "#ffffff",
-      });
-    } catch (e) {
-      console.error("barcode error", e);
-    }
+    QRCode.toDataURL(value, {
+      errorCorrectionLevel: "H",
+      margin: 2,
+      width: 320,
+    })
+      .then(setSrc)
+      .catch((err) => console.error("qr error", err));
   }, [value]);
-  return <svg ref={ref} className="w-full" />;
-}
-
-function readCachedCoupons(email: string): Coupon[] | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(COUPONS_CACHE_PREFIX + email);
-    if (!raw) return null;
-    return JSON.parse(raw) as Coupon[];
-  } catch {
-    return null;
-  }
-}
-
-function writeCachedCoupons(email: string, coupons: Coupon[]) {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(COUPONS_CACHE_PREFIX + email, JSON.stringify(coupons));
-  } catch {
-    /* ignore */
-  }
+  return (
+    <img
+      src={src}
+      alt={value}
+      className="mx-auto h-64 w-64"
+      width={256}
+      height={256}
+    />
+  );
 }
 
 function CouponsPage() {
   const { t } = useTranslation();
   const { lang } = useParams({ from: "/$lang/coupons" });
-  const navigate = useNavigate();
-  const { ssrEmail, ssrCoupons } = Route.useLoaderData();
-
-  // 初始：優先用 SSR 資料；否則用 client localStorage 快取
-  const [email, setEmail] = useState<string | null>(ssrEmail);
-  const [coupons, setCoupons] = useState<Coupon[] | null>(ssrCoupons);
   const [navigating, setNavigating] = useState<string | null>(null);
-
-  useEffect(() => {
-    const stored = getStoredEmail();
-    if (!stored) {
-      navigate({ to: "/$lang/welcome", params: { lang }, replace: true });
-      return;
-    }
-    setEmail(stored);
-
-    // 1. 立刻顯示快取（避免閃骨架）
-    if (coupons === null) {
-      const cached = readCachedCoupons(stored);
-      if (cached) setCoupons(cached);
-    }
-
-    // 2. 背景刷新
-    api
-      .getMyCoupons({ email: stored })
-      .then((fresh) => {
-        setCoupons(fresh);
-        writeCachedCoupons(stored, fresh);
-      })
-      .catch((err) => {
-        console.error(err);
-        if (coupons === null) setCoupons([]);
-      });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lang, navigate]);
-
-  if (!email) return <LoadingOverlay open message={t("common.loading")} />;
 
   return (
     <PageShell>
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">{t("coupons.title")}</h1>
-        <button
-          onClick={() => {
-            clearStoredEmail();
-            // 同時清除快取
-            try {
-              window.localStorage.removeItem(COUPONS_CACHE_PREFIX + email);
-            } catch {
-              /* ignore */
-            }
-            navigate({ to: "/$lang/welcome", params: { lang } });
-          }}
-          className="text-xs text-muted-foreground underline"
-        >
-          {t("coupons.changeEmail")}
-        </button>
-      </div>
-      <p className="mt-1 break-all text-xs text-muted-foreground">{email}</p>
+      <h1 className="text-xl font-semibold tracking-tight text-foreground">
+        {t("coupons.title")}
+      </h1>
 
       {/* 抽獎入口 */}
       <div className="mt-5 rounded-2xl border border-border bg-card p-5">
@@ -195,24 +78,23 @@ function CouponsPage() {
       </div>
 
       <div className="mt-8 space-y-3">
-        {coupons === null && (
-          <>
-            <Skeleton className="h-24 w-full rounded-xl" />
-            <Skeleton className="h-24 w-full rounded-xl" />
-          </>
-        )}
-        {/* ⚠️ MOCK：票券中台 API 接通前，若使用者沒有已領券，顯示 demo 卡片 */}
-        {coupons && (coupons.length === 0 ? MOCK_COUPONS : coupons).map((c) => (
+        {ACTIVITY_COUPONS.map((c) => (
           <div
-            key={c.coupon_serialnum}
+            key={c.serialnum}
             className="overflow-hidden rounded-xl border border-border bg-card"
           >
             <div className="flex items-center gap-2 border-b border-border bg-muted/40 px-4 py-2.5 text-sm font-medium text-foreground">
               <Ticket className="h-4 w-4" strokeWidth={1.75} />
-              <span>{couponLabel(c)}</span>
+              <span>{t(c.nameKey)}</span>
             </div>
-            <div className="bg-white px-2 py-3">
-              <Barcode value={c.coupon_serialnum} />
+            <div className="bg-white px-4 py-4">
+              <CouponQR value={c.serialnum} />
+              <p className="mt-3 text-center font-mono text-xs tracking-wider text-foreground">
+                {c.serialnum}
+              </p>
+              <p className="mt-1 text-center text-xs text-muted-foreground">
+                {t(c.descriptionKey)}
+              </p>
             </div>
           </div>
         ))}

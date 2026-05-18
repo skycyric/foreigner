@@ -32,12 +32,6 @@ export class InvalidTnError extends Error {
   }
 }
 
-export interface Coupon {
-  coupon_serialnum: string;
-  email: string | null;
-  used_date: string | null;
-}
-
 export interface Winner {
   id: string;
   prize_name: string;
@@ -80,19 +74,6 @@ export const api = {
     if (error) throw error;
     return { email: input.email };
   },
-
-  async getMyCoupons(input: { email: string }): Promise<Coupon[]> {
-    if (USE_REMOTE_API) {
-      return remote(`/coupons?email=${encodeURIComponent(input.email)}`);
-    }
-    const { data, error } = await supabase
-      .from("coupons")
-      .select("*")
-      .eq("email", input.email);
-    if (error) throw error;
-    return (data ?? []) as Coupon[];
-  },
-
 
   async submitLotteryEntry(input: {
     tn: string;
