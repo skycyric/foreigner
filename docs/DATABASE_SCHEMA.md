@@ -94,9 +94,10 @@
 | `email` | `text` | NO | — | FK → `participants.email` ON DELETE CASCADE |
 | `raw_payload` | `text` | YES | — | QR 原始字串 |
 | `source` | `text` | NO | `'manual'` | `'manual'` / `'qr'`（無 CHECK） |
+| `transaction_time` | `timestamptz` | YES | — | QR payload 第二段日期（`YYYYMMDD`）解析後寫入，時間固定 `00:00:00`；手動輸入為 NULL |
 | `created_at` | `timestamptz` | NO | `now()` | |
 
-**索引**：`lottery_entries_pkey`、`lottery_entries_tn_number_key (UNIQUE)`、`idx_lottery_email`
+**索引**：`lottery_entries_pkey`、`lottery_entries_tn_number_key (UNIQUE)`、`idx_lottery_email`、`idx_lottery_transaction_time`
 
 **RLS**：SELECT / INSERT 皆 `public` 全開（⚠️ R3）
 
@@ -211,9 +212,11 @@ CREATE TABLE public.lottery_entries (
   email       text NOT NULL REFERENCES public.participants(email) ON DELETE CASCADE,
   raw_payload text,
   source      text NOT NULL DEFAULT 'manual',
+  transaction_time timestamptz,
   created_at  timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX idx_lottery_email ON public.lottery_entries(email);
+CREATE INDEX idx_lottery_transaction_time ON public.lottery_entries(transaction_time);
 
 -- winners
 CREATE TABLE public.winners (
