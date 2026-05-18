@@ -1,69 +1,90 @@
-# Coupons 表欄位調整
+## 背景與大原則
 
-## 變更內容
+確認重點：
+- **上線前就會搬到公司內網**（參考 everrich-group 那種靜態頁 + 公司 API 的架構）
+- **後端 API 由公司提供**，我們現在用的 Supabase 只是「過渡期暫存」
+- 結論：**現在每多依賴 Supabase 一個欄位 / 一條 RLS / 一個 server function，搬遷時就多一份工**
 
-| 原欄位 | 動作 | 新欄位 |
-|---|---|---|
-| `coupon_code` | 改名 | `coupon_serialnum` |
-| `assigned_at` | **刪除**（時間跟著交易單，不需獨立記錄） |  — |
-| `used_at` | 改名 | `used_date` |
-| `created_at` | 保留不動 | `created_at` |
+所以這次調整不只解決 `/coupons`，而要同步立一個原則：**所有對外資料存取走 `src/lib/api.ts` 單一抽象層**，未來搬家時只改這一個檔案的實作（Supabase client → fetch 公司 API），UI 完全不用動。
 
-## 連帶影響（必須一起處理）
+---
 
-1. **Generated columns** (`leading_code`, `issue_source`, `usage_category`, `type_serial`, `serial_number`, `check_digit`)
-   - 全部以 `coupon_code` 為來源，PG 不允許直接 rename 被 generated column 引用的欄位。
-   - 做法：先 DROP 這 6 個 generated columns → rename `coupon_code` → 重新以 `coupon_serialnum` 為來源 ADD 回去。
+## 本次要做的事
 
-2. **CHECK 約束** `coupons_code_format_chk`
-   - 引用 `coupon_code`，先 DROP 再以新名稱 `coupon_serialnum` 重建。
+### 1. `/coupons` 頁：完全脫離資料庫
 
-3. **Primary Key**
-   - PK 名稱 `coupons_pkey` 保留，欄位隨 rename 自動跟上，無需手動處理。
+3 組券號（`97E51126A6002000` / `97E51126A1008000` / `97E51126F1003000`）是**固定活動資產**，不是使用者資料 → 寫死在前端常數，搬家時直接跟著前端走，零成本。
 
-4. **索引** `idx_coupons_email_used`
-   - 含 `used_at`，rename 會自動跟隨欄位（PG 行為），不需重建。
+| 動作 | 細節 |
+|---|---|
+| 新增 `src/lib/coupons.ts` | export 3 組常數：`{ serialnum, name, description }`，名稱/描述放 i18n key |
+| 改寫 `src/routes/$lang.coupons.tsx` | 移除 SSR loader、`getStoredEmail` redirect、`api.getMyCoupons`、MOCK、快取邏輯。所有訪客直接看到 3 張 QR 卡 |
+| QR 套件 | `bun remove jsbarcode` + `bun add qrcode @types/qrcode`；用 `QRCode.toDataURL(serialnum, { errorCorrectionLevel: "H", margin: 2, width: 256 })`，跟行銷原圖一致 |
+| 刪除 `src/lib/coupons.functions.ts` | 整檔刪掉（`listAvailableCoupons` / `claimCoupon` / `markCouponUsed` 都不需要） |
+| 刪除 `api.getMyCoupons` | 從 `src/lib/api.ts` 移除 |
+| DB migration | `DROP TABLE public.coupons`（含 RLS、CHECK） |
+| i18n | `zh/en/ja/ko.json` 各加 3 組券名與描述 key |
 
-5. **RLS Policies**
-   - 三條政策 condition 都是 `true`，不引用欄位名稱，無需更動。
+`/coupons` 頁保留的元素：頁面標題、3 張 QR 卡片、「去掃 TN 抽獎」「手動輸入 TN」「中獎名單」三個導航 CTA。**移除**：email 顯示、「更換 email」按鈕、welcome redirect。
 
-## SQL 大綱
+### 2. 為搬遷預先抽象（不大改、只立規矩）
 
-```sql
-ALTER TABLE public.coupons
-  DROP COLUMN leading_code,
-  DROP COLUMN issue_source,
-  DROP COLUMN usage_category,
-  DROP COLUMN type_serial,
-  DROP COLUMN serial_number,
-  DROP COLUMN check_digit,
-  DROP CONSTRAINT coupons_code_format_chk,
-  DROP COLUMN assigned_at;
+不重寫現有程式，但建立 1 個檔案＋ 1 個文件，讓後續搬遷有明確切換點：
 
-ALTER TABLE public.coupons RENAME COLUMN coupon_code TO coupon_serialnum;
-ALTER TABLE public.coupons RENAME COLUMN used_at    TO used_date;
+| 檔案 | 內容 |
+|---|---|
+| `src/lib/api.ts`（既有，補註解） | 在檔頭加註：「**所有資料存取唯一入口；搬遷到公司 API 時只改此檔內部實作**」。確認所有 UI 元件都只 import `api.xxx()`，不直接 import `supabase` client |
+| `docs/MIGRATION_PLAN.md`（新增） | 一頁說明：未來搬到內網時，把 `api.ts` 的 Supabase 呼叫換成 `fetch(COMPANY_API_BASE + ...)`；列出目前用到的 4 個方法（`getOrCreateParticipant` / `submitLotteryEntry` / `getWinners` / 已移除的 coupons）對應未來公司 API 預期 endpoint |
+| `docs/DATABASE_SCHEMA.md` | 移除整個 `coupons` 章節；coupons 改記載於「前端常數，非資料庫」一節 |
 
-ALTER TABLE public.coupons
-  ADD CONSTRAINT coupons_serialnum_format_chk
-    CHECK (coupon_serialnum ~ '^[0-9]{2}[WER][1-7][0-9]{11}$'),
-  ADD COLUMN leading_code   char(2) GENERATED ALWAYS AS (substring(coupon_serialnum FROM 1 FOR 2)) STORED,
-  ADD COLUMN issue_source   char(1) GENERATED ALWAYS AS (substring(coupon_serialnum FROM 3 FOR 1)) STORED,
-  ADD COLUMN usage_category char(1) GENERATED ALWAYS AS (substring(coupon_serialnum FROM 4 FOR 1)) STORED,
-  ADD COLUMN type_serial    char(2) GENERATED ALWAYS AS (substring(coupon_serialnum FROM 5 FOR 2)) STORED,
-  ADD COLUMN serial_number  char(9) GENERATED ALWAYS AS (substring(coupon_serialnum FROM 7 FOR 9)) STORED,
-  ADD COLUMN check_digit    char(1) GENERATED ALWAYS AS (substring(coupon_serialnum FROM 16 FOR 1)) STORED;
+> ⚠️ 這次**不**動 `participants` / `lottery_entries` / `winners` 三張表的結構，那是下一階段（拿到公司 API spec 後）才一次搬。本回合只清乾淨 coupons + 立好規矩。
+
+---
+
+## 技術細節
+
+### `src/lib/coupons.ts`（新檔）
+
+```ts
+export interface ActivityCoupon {
+  serialnum: string;
+  nameKey: string;        // i18n key, e.g. "coupons.items.welcome.name"
+  descriptionKey: string;
+}
+
+export const ACTIVITY_COUPONS: readonly ActivityCoupon[] = [
+  { serialnum: "97E51126A6002000", nameKey: "coupons.items.a6.name", descriptionKey: "coupons.items.a6.desc" },
+  { serialnum: "97E51126A1008000", nameKey: "coupons.items.a1.name", descriptionKey: "coupons.items.a1.desc" },
+  { serialnum: "97E51126F1003000", nameKey: "coupons.items.f1.name", descriptionKey: "coupons.items.f1.desc" },
+] as const;
 ```
 
-## 程式碼同步
+### QR 渲染元件
 
-migration 跑完 `types.ts` 會自動更新，接著修改：
+```tsx
+function CouponQR({ value }: { value: string }) {
+  const [src, setSrc] = useState<string>("");
+  useEffect(() => {
+    QRCode.toDataURL(value, { errorCorrectionLevel: "H", margin: 2, width: 320 })
+      .then(setSrc).catch(console.error);
+  }, [value]);
+  return <img src={src} alt={value} className="mx-auto w-64 h-64" />;
+}
+```
 
-- **`src/lib/api.ts`** — `getMyCoupons()` 的 select / 排序欄位（目前查 `coupons` 並可能用到 `coupon_code` / `used_at` / `assigned_at`）。
-- **`src/lib/coupons.functions.ts`** — `claimCoupon`（INSERT 用 `coupon_serialnum`）、`markCouponUsed`（UPDATE `used_date`）。
-- **`src/routes/$lang.coupons.tsx`** — 顯示券號、已使用狀態的欄位名稱。
-- **`docs/DATABASE_SCHEMA.md`** — 欄位表、generated columns、CHECK 約束、ER 圖、附錄重建 SQL、第 8 節對應表全面更新；移除 `assigned_at` 段落。
+### DB migration
 
-## 風險
+```sql
+DROP TABLE IF EXISTS public.coupons CASCADE;
+```
+（無 FK 指向它，CASCADE 是保險）
 
-- 目前 `coupons` 表為空（lazy 領券，尚未對接中台），DROP/重建 generated columns **不會遺失資料**。
-- 若實際已有資料，需先評估資料保留策略（此情境暫不適用）。
+---
+
+## 確認後我會：
+1. 跑 migration（會跳審核視窗）
+2. 安裝 `qrcode`、移除 `jsbarcode`
+3. 一次把 `coupons.ts`、`$lang.coupons.tsx`、i18n、文件改完
+4. 刪除 `coupons.functions.ts` 與 `api.getMyCoupons`
+
+要我直接開工嗎？或者要先補 `MIGRATION_PLAN.md` 給你看內容再決定？
