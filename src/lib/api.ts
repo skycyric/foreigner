@@ -95,7 +95,7 @@ export const api = {
       supabase
         .from("lottery_entries")
         .insert({
-          tn_number: tnToInsert,
+          transaction_number: tnToInsert,
           email: input.email,
           raw_payload: input.raw_payload ?? null,
           transaction_time: input.transaction_time ?? null,
