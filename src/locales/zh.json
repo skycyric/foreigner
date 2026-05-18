@@ -36,7 +36,12 @@
     "scanBtn": "掃描交易單 QR Code",
     "manualBtn": "手動輸入交易單號",
     "viewWinners": "查看中獎名單",
-    "changeEmail": "重新輸入 Email"
+    "changeEmail": "重新輸入 Email",
+    "items": {
+      "a6": { "name": "折扣券 A6", "desc": "結帳時請出示此 QR Code" },
+      "a1": { "name": "折扣券 A1", "desc": "結帳時請出示此 QR Code" },
+      "f1": { "name": "折扣券 F1", "desc": "結帳時請出示此 QR Code" }
+    }
   },
   "scan": {
     "title": "掃描交易單 QR Code",

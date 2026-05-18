@@ -36,7 +36,12 @@
     "scanBtn": "영수증 QR 스캔",
     "manualBtn": "영수증 번호 입력",
     "viewWinners": "당첨자 보기",
-    "changeEmail": "이메일 다시 입력"
+    "changeEmail": "이메일 다시 입력",
+    "items": {
+      "a6": { "name": "쿠폰 A6", "desc": "결제 시 이 QR 코드를 제시하세요" },
+      "a1": { "name": "쿠폰 A1", "desc": "결제 시 이 QR 코드를 제시하세요" },
+      "f1": { "name": "쿠폰 F1", "desc": "결제 시 이 QR 코드를 제시하세요" }
+    }
   },
   "scan": {
     "title": "영수증 QR 스캔",
