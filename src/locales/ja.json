@@ -36,7 +36,12 @@
     "scanBtn": "レシートQRをスキャン",
     "manualBtn": "レシート番号を入力",
     "viewWinners": "当選者を見る",
-    "changeEmail": "メールを再入力"
+    "changeEmail": "メールを再入力",
+    "items": {
+      "a6": { "name": "クーポン A6", "desc": "レジでこのQRコードをご提示ください" },
+      "a1": { "name": "クーポン A1", "desc": "レジでこのQRコードをご提示ください" },
+      "f1": { "name": "クーポン F1", "desc": "レジでこのQRコードをご提示ください" }
+    }
   },
   "scan": {
     "title": "レシートQRをスキャン",

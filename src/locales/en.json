@@ -36,7 +36,12 @@
     "scanBtn": "Scan Receipt QR Code",
     "manualBtn": "Enter Receipt Number",
     "viewWinners": "View Winners",
-    "changeEmail": "Re-enter Email"
+    "changeEmail": "Re-enter Email",
+    "items": {
+      "a6": { "name": "Coupon A6", "desc": "Show this QR code at checkout" },
+      "a1": { "name": "Coupon A1", "desc": "Show this QR code at checkout" },
+      "f1": { "name": "Coupon F1", "desc": "Show this QR code at checkout" }
+    }
   },
   "scan": {
     "title": "Scan Receipt QR Code",

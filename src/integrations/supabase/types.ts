@@ -14,35 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      coupons: {
-        Row: {
-          coupon_serialnum: string
-          created_at: string
-          email: string
-          used_date: string | null
-        }
-        Insert: {
-          coupon_serialnum: string
-          created_at?: string
-          email: string
-          used_date?: string | null
-        }
-        Update: {
-          coupon_serialnum?: string
-          created_at?: string
-          email?: string
-          used_date?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "coupons_email_fkey"
-            columns: ["email"]
-            isOneToOne: false
-            referencedRelation: "participants"
-            referencedColumns: ["email"]
-          },
-        ]
-      }
       lottery_entries: {
         Row: {
           created_at: string
