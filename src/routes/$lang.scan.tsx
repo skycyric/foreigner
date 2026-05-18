@@ -37,6 +37,17 @@ function extractTn(raw: string): string {
   return first.toUpperCase();
 }
 
+/**
+ * Parse QR payload's second segment as transaction date.
+ * "YA2101223580^20251206^14980^ER" → "2025-12-06 00:00:00"
+ * Returns undefined when segment is missing or not 8-digit YYYYMMDD.
+ */
+function extractTransactionTime(raw: string): string | undefined {
+  const seg = raw.split("^")[1]?.trim();
+  if (!seg || !/^\d{8}$/.test(seg)) return undefined;
+  return `${seg.slice(0, 4)}-${seg.slice(4, 6)}-${seg.slice(6, 8)} 00:00:00`;
+}
+
 function getCameraErrorMessage(error: unknown, t: (key: string) => string): string {
   const message = String(error).toLowerCase();
   if (
@@ -156,6 +167,7 @@ function ScanPage() {
           tn,
           email,
           raw_payload: decodedText,
+          transaction_time: extractTransactionTime(decodedText),
           source: "qr",
         });
 
