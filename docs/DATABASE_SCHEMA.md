@@ -106,71 +106,6 @@
 
 ---
 
-### Table: `coupons`
-
-- **用途**：使用者**領取／使用紀錄**。本表**不**鏡像券細節（折扣、效期、券種名稱），
-  那些一律由票券中台 API 提供。
-- **Primary Key**：`coupon_serialnum`（固定 16 碼，由中台領券 API 回傳）
-
-#### 欄位規格
-
-| 欄位名 | 型別 | Nullable | 預設值 | 說明 |
-|---|---|---|---|---|
-| `coupon_serialnum` | `char(16)` | NO | — | 主鍵，16 碼券號（見下方結構） |
-| `email` | `text` | NO | — | FK → `participants.email` ON DELETE CASCADE |
-| `used_date` | `timestamptz` | YES | — | 使用時間（中台 webhook 後 UPDATE） |
-| `created_at` | `timestamptz` | NO | `now()` | |
-
-> generated columns 為 `STORED`，由 PostgreSQL 在 INSERT/UPDATE 時自動依 `coupon_serialnum`
-> 拆解，不可手動寫入。
-
-#### 16 碼券號結構（昇恆昌規則）
-
-```text
-[Leading Code 2碼][券別代碼 4碼][流水號 9碼][檢查碼 1碼]
-        99            W101         180000001        0
-        |             |||
-        |             ||└─ type_serial：券種流水（2碼）
-        |             |└── usage_category：1-7
-        |             └─── issue_source：W / E / R
-        └───────────────── leading_code：99/98/97/96
-                            = iRich CRM / ERP / POS / 宜睿
-```
-
-#### CHECK 約束
-
-```sql
-coupons_code_format_chk:
-  coupon_serialnum ~ '^[0-9]{2}[WER][1-7][0-9]{11}$'
-```
-
-#### 索引
-
-| Index 名稱 | 欄位 | 類型 |
-|---|---|---|
-| `coupons_pkey` | `coupon_serialnum` | UNIQUE (PK) |
-| `idx_coupons_email` | `email` | btree |
-| `idx_coupons_email_used` | `(email, used_date)` | btree |
-
-#### 外鍵
-
-| 來源欄位 | 目標 | ON DELETE |
-|---|---|---|
-| `email` | `participants.email` | CASCADE |
-
-#### RLS 政策
-
-| 政策名稱 | 操作 | 角色 | 條件 |
-|---|---|---|---|
-| Anyone can read coupons | SELECT | public | `USING (true)` |
-| Anyone can insert coupon claim | INSERT | public | `WITH CHECK (true)`（由 `claimCoupon` server fn 呼叫） |
-| Anyone can update coupon used_date | UPDATE | public | `USING (true) WITH CHECK (true)`（由 `markCouponUsed` server fn 呼叫） |
-
-> ⚠️ 寫入路徑目前依賴 server function 自律（並未限制只能改 `used_date`）。
-> 上線前需改為 `auth.uid()` 收緊 + 欄位層級限制（見 R3）。
-
----
-
 ### Table: `winners`
 
 - **用途**：抽獎結果公告
@@ -195,8 +130,6 @@ coupons_code_format_chk:
 
 通用 trigger function：BEFORE UPDATE 時把 `NEW.updated_at` 設為 `now()`。
 目前掛載：`participants.update_participants_updated_at`。
-
-> ⚠️ 舊版的 `assign_coupons_to_participant()` 已於本次重構中刪除（改為 Lazy 領券）。
 
 ---
 
@@ -224,12 +157,10 @@ coupons_code_format_chk:
 
 | 編號 | 項目 | 嚴重性 | 說明 | 建議 |
 |---|---|---|---|---|
-| R3 | RLS 政策**全部開放 public** | **高** | 任何匿名使用者皆可讀／寫 `coupons` / `lottery_entries` / `participants` | 上線前需改為 `auth.uid()` 比對 |
+| R3 | RLS 政策**全部開放 public** | **高** | 任何匿名使用者皆可讀／寫 `lottery_entries` / `participants` | 上線前需改為 `auth.uid()` 比對 |
 | R4 | `participants` 無 DELETE 政策 | 低 | GDPR / 個資法刪除權需求 | 視業務需求新增 admin-only 政策 |
 | R6 | `lottery_entries.source` 無 CHECK | 低 | 前端可寫入任意字串 | 可加 `CHECK (source IN ('manual','qr'))` |
 | R7 | 測試模式 TN 後綴繞過 | **高** | `src/lib/api.ts` 在 `isTestTn` 為真時會繞過唯一檢查 | 上線前移除 |
-| R8 | 票券中台 API 不可用時的降級 | 中 | Lazy 領券完全依賴中台 | 中台 timeout / 5xx 時前端應顯示「暫時無法領取，請稍後再試」，不要寫入空券碼 |
-| R9 | `coupons` UPDATE 政策過寬 | 中 | 目前任何人可改任何欄位（包含 `email`） | 加欄位層級 trigger 或改為 `auth.uid()` 並只允許 `used_date` |
 
 ---
 
@@ -238,46 +169,25 @@ coupons_code_format_chk:
 | 方法 | 位置 | 操作 | 表 / 對外 API |
 |---|---|---|---|
 | `getOrCreateParticipant()` | `src/lib/api.ts` | UPSERT | `participants`（onConflict: email） |
-| `getMyCoupons()` | `src/lib/api.ts` | SELECT | `coupons` WHERE email = $1（已領清單） |
 | `submitLotteryEntry()` | `src/lib/api.ts` | INSERT | `lottery_entries` |
 | `getWinners()` | `src/lib/api.ts` | SELECT | `winners` ORDER BY rank |
-| `listAvailableCoupons()` | `src/lib/coupons.functions.ts` | 中台 GET | （TODO）`{COUPON_MIDDLEWARE_BASE_URL}/coupons/available?email=` |
-| `claimCoupon()` | `src/lib/coupons.functions.ts` | 中台 POST + 本地 INSERT | （TODO）`{COUPON_MIDDLEWARE_BASE_URL}/coupons/claim` → INSERT `coupons` |
-| `markCouponUsed()` | `src/lib/coupons.functions.ts` | UPDATE | `coupons.used_date` |
 
 ---
 
-## 9. 票券中台 API 對接規格（規劃中）
+## 9. 優惠券（前端常數）
 
-### 環境變數
+3 組固定券號儲存於 `src/lib/coupons.ts`：
 
-| 名稱 | 類型 | 說明 |
-|---|---|---|
-| `COUPON_MIDDLEWARE_BASE_URL` | server-only env | 中台 API base URL |
-| `COUPON_MIDDLEWARE_API_KEY` | secret | 中台 API key（用 `secrets--add_secret` 設定） |
+| 券號 | 用途 |
+|---|---|
+| `97E51126A6002000` | 折扣券 A6 |
+| `97E51126A1008000` | 折扣券 A1 |
+| `97E51126F1003000` | 折扣券 F1 |
 
-### 預期 endpoints
-
-```text
-GET  {BASE_URL}/coupons/available?email=...
-  → 200 [{ template_id, name, description, issue_source, usage_category, ... }]
-
-POST {BASE_URL}/coupons/claim
-  body: { email, template_id }
-  → 200 { coupon_serialnum: "16碼" }
-  → 409 已領取
-  → 410 已售罄
-
-POST {BASE_URL}/webhooks/coupon-used   ← 由中台 call 我們
-  body: { coupon_serialnum, used_date }
-  → 我們的 server route 收到後 UPDATE coupons.used_date
-```
-
-### 錯誤處理原則
-
-- 中台 4xx → 回傳明確錯誤碼給前端，不寫入 DB
-- 中台 5xx / timeout → 回傳「暫時無法領取」，前端顯示重試按鈕
-- 中台回傳的 `coupon_serialnum` 必須符合 `^[0-9]{2}[WER][1-7][0-9]{11}$`，否則拒絕寫入
+- 前端用 `qrcode` 套件即時把 16 碼券號編成 QR Code 顯示
+- POS 端用掃描器讀 QR → POS 後端 parser 取得 16 碼 → 中台核銷
+- **本系統不記錄誰用了哪張券**（無 DB 寫入路徑）
+- 詳見 `docs/MIGRATION_PLAN.md`「優惠券（已搬完）」
 
 ---
 
@@ -304,18 +214,6 @@ CREATE TABLE public.lottery_entries (
   created_at  timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX idx_lottery_email ON public.lottery_entries(email);
-
--- coupons（領取／使用紀錄；細節由中台 API 提供）
-CREATE TABLE public.coupons (
-  coupon_serialnum      char(16) PRIMARY KEY,
-  email            text NOT NULL REFERENCES public.participants(email) ON DELETE CASCADE,
-  used_date          timestamptz,
-  created_at       timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT coupons_code_format_chk
-    CHECK (coupon_serialnum ~ '^[0-9]{2}[WER][1-7][0-9]{11}$')
-);
-CREATE INDEX idx_coupons_email      ON public.coupons(email);
-CREATE INDEX idx_coupons_email_used ON public.coupons(email, used_date);
 
 -- winners
 CREATE TABLE public.winners (
