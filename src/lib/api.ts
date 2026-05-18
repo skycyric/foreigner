@@ -79,6 +79,7 @@ export const api = {
     tn: string;
     email: string;
     raw_payload?: string;
+    transaction_time?: string;
     source: "manual" | "qr";
   }): Promise<{ id: string; alreadyUsed?: boolean }> {
     if (!isValidTnFormat(input.tn)) {
@@ -97,6 +98,7 @@ export const api = {
           tn_number: tnToInsert,
           email: input.email,
           raw_payload: input.raw_payload ?? null,
+          transaction_time: input.transaction_time ?? null,
           source: input.source,
         })
         .select("id")
