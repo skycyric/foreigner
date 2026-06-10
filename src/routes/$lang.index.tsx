@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { PageShell } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
@@ -42,9 +42,6 @@ function HomePage() {
     <PageShell>
       <div className="space-y-10">
         <div className="rounded-2xl border border-border bg-card p-8 text-center">
-          <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-full border border-border">
-            <Sparkles className="h-5 w-5 text-foreground" strokeWidth={1.5} />
-          </div>
           <h1 className="text-2xl font-semibold leading-tight tracking-tight text-foreground">
             {t("home.title")}
           </h1>
