@@ -1,7 +1,8 @@
 import { Link, useNavigate, useParams, useLocation } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { ChevronLeft, Gift } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { isSupportedLang, SUPPORTED_LANGS, storeLang, type Lang } from "@/lib/i18n";
+import richclubLogo from "@/assets/richclub-logo.jpg.asset.json";
 
 /**
  * 顯式上一頁路徑表 — 避免 history.back() 在 push/replace 混用時跳回 result 等中間頁。
@@ -35,28 +36,27 @@ export function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-card/90 backdrop-blur">
-      <div className="mx-auto flex max-w-md items-center justify-between gap-2 px-4 py-3">
-        <div className="flex items-center gap-1">
-          {!hideBack && (
-            <button
-              type="button"
-              onClick={handleBack}
-              aria-label={t("common.back")}
-              className="-ml-1 flex h-9 w-9 items-center justify-center rounded-full text-foreground hover:bg-muted active:bg-muted/70"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-          )}
-          <Link
-            to="/$lang"
-            params={{ lang }}
-            className="flex items-center gap-1.5 text-base font-semibold text-foreground tracking-tight"
+    <header className="sticky top-0 z-40 border-b border-border bg-black backdrop-blur">
+      <div className="mx-auto flex max-w-md items-center justify-center gap-2 px-4 py-3 relative">
+        {!hideBack && (
+          <button
+            type="button"
+            onClick={handleBack}
+            aria-label={t("common.back")}
+            className="absolute left-3 flex h-9 w-9 items-center justify-center rounded-full text-white hover:bg-white/10 active:bg-white/20"
           >
-            <Gift className="h-4 w-4" strokeWidth={1.75} />
-            <span>{t("brand")}</span>
-          </Link>
-        </div>
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+        )}
+        <Link to="/$lang" params={{ lang }} aria-label="RICHCLUB">
+          <img
+            src={richclubLogo.url}
+            alt="RICHCLUB powered by EVERRICH"
+            className="h-10 w-auto object-contain"
+          />
+        </Link>
+      </div>
+      <div className="mx-auto flex max-w-md items-center justify-end px-4 py-2 border-t border-border bg-card/90">
         <select
           aria-label={t("lang.label")}
           value={lang}
