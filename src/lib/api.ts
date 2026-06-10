@@ -63,15 +63,13 @@ export const api = {
     }
     const { error } = await supabase
       .from("participants")
-      .upsert(
-        {
-          email: input.email,
-          device_id: input.device_id,
-          language: input.language,
-        },
-        { onConflict: "email" },
-      );
-    if (error) throw error;
+      .insert({
+        email: input.email,
+        device_id: input.device_id,
+        language: input.language,
+      });
+    // 23505 = unique_violation (email already registered) — that's fine for "get or create".
+    if (error && (error as { code?: string }).code !== "23505") throw error;
     return { email: input.email };
   },
 
@@ -91,29 +89,31 @@ export const api = {
     // ⚠️ TEST MODE: 只有測試 TN（白名單／前綴）才會加上時間戳後綴讓它可重複輸入；
     // 真實券號永遠走 unique 檢查。上線前請參考 docs/PRODUCTION_CHECKLIST.md 移除。
     const tnToInsert = isTestTn(input.tn) ? `${input.tn}__t${Date.now()}` : input.tn;
+    // Generate id client-side so we don't need a SELECT RLS policy to read it back.
+    const entryId =
+      crypto?.randomUUID?.() ??
+      `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const insertEntry = async () =>
-      supabase
-        .from("lottery_entries")
-        .insert({
-          transaction_number: tnToInsert,
-          email: input.email,
-          raw_payload: input.raw_payload ?? null,
-          transaction_time: input.transaction_time ?? null,
-          source: input.source,
-        })
-        .select("id")
-        .single();
+      supabase.from("lottery_entries").insert({
+        id: entryId,
+        transaction_number: tnToInsert,
+        email: input.email,
+        raw_payload: input.raw_payload ?? null,
+        transaction_time: input.transaction_time ?? null,
+        source: input.source,
+      });
 
-    let { data, error } = await insertEntry();
+    let { error } = await insertEntry();
 
     if ((error as { code?: string } | null)?.code === "23503") {
       const { error: participantError } = await supabase
         .from("participants")
-        .upsert({ email: input.email }, { onConflict: "email" });
-
-      if (!participantError) {
+        .insert({ email: input.email });
+      const okToRetry =
+        !participantError ||
+        (participantError as { code?: string }).code === "23505";
+      if (okToRetry) {
         const retry = await insertEntry();
-        data = retry.data;
         error = retry.error;
       }
     }
@@ -124,10 +124,6 @@ export const api = {
         return { id: "", alreadyUsed: true };
       }
       throw error;
-    }
-    const entryId = data?.id;
-    if (!entryId) {
-      throw new Error("LOTTERY_ENTRY_INSERT_FAILED");
     }
     return { id: entryId };
   },
