@@ -11,6 +11,12 @@ export default defineConfig({
   nitro: false,
   tanstackStart: {
     ssr: false,
+    spa: {
+      enabled: true,
+      prerender: {
+        outputPath: "/index",
+      },
+    },
   },
   vite: {
     base: "./",
