@@ -1,7 +1,17 @@
 {
   "brand": "Lucky Draw",
-  "nav": { "home": "Home", "about": "Rules", "terms": "Privacy", "winners": "Winners" },
-  "lang": { "label": "Language", "zh": "繁體中文", "en": "English", "ja": "日本語", "ko": "한국어" },
+  "nav": {
+    "home": "Home",
+    "about": "Rules",
+    "terms": "Privacy"
+  },
+  "lang": {
+    "label": "Language",
+    "zh": "繁體中文",
+    "en": "English",
+    "ja": "日本語",
+    "ko": "한국어"
+  },
   "home": {
     "title": "Ever Rich Shopping Rewards — Register Now to Win",
     "subtitle": "Enter your email for a discount coupon and join the lucky draw with your receipt",
@@ -35,12 +45,20 @@
     "lotteryHint": "Scan or enter your receipt number below to enter the draw",
     "scanBtn": "Scan Receipt QR Code",
     "manualBtn": "Enter Receipt Number",
-    "viewWinners": "View Winners",
     "changeEmail": "Re-enter Email",
     "items": {
-      "a6": { "name": "Coupon A6", "desc": "Show this QR code at checkout" },
-      "a1": { "name": "Coupon A1", "desc": "Show this QR code at checkout" },
-      "f1": { "name": "Coupon F1", "desc": "Show this QR code at checkout" }
+      "a6": {
+        "name": "Coupon A6",
+        "desc": "Show this QR code at checkout"
+      },
+      "a1": {
+        "name": "Coupon A1",
+        "desc": "Show this QR code at checkout"
+      },
+      "f1": {
+        "name": "Coupon F1",
+        "desc": "Show this QR code at checkout"
+      }
     }
   },
   "scan": {
@@ -78,14 +96,6 @@
     "tnLabel": "Receipt #",
     "again": "Enter Another",
     "home": "Back to Coupons"
-  },
-  "winners": {
-    "title": "Winners",
-    "rank": "Rank",
-    "prize": "Prize",
-    "email": "Email",
-    "backup": "Backup",
-    "empty": "Winners not announced yet"
   },
   "about": {
     "title": "Event Rules",

@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LangRouteImport } from './routes/$lang'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LangIndexRouteImport } from './routes/$lang.index'
-import { Route as LangWinnersRouteImport } from './routes/$lang.winners'
 import { Route as LangWelcomeRouteImport } from './routes/$lang.welcome'
 import { Route as LangTermsRouteImport } from './routes/$lang.terms'
 import { Route as LangScanRouteImport } from './routes/$lang.scan'
@@ -34,11 +33,6 @@ const IndexRoute = IndexRouteImport.update({
 const LangIndexRoute = LangIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => LangRoute,
-} as any)
-const LangWinnersRoute = LangWinnersRouteImport.update({
-  id: '/winners',
-  path: '/winners',
   getParentRoute: () => LangRoute,
 } as any)
 const LangWelcomeRoute = LangWelcomeRouteImport.update({
@@ -87,7 +81,6 @@ export interface FileRoutesByFullPath {
   '/$lang/scan': typeof LangScanRoute
   '/$lang/terms': typeof LangTermsRoute
   '/$lang/welcome': typeof LangWelcomeRoute
-  '/$lang/winners': typeof LangWinnersRoute
   '/$lang/': typeof LangIndexRoute
 }
 export interface FileRoutesByTo {
@@ -99,7 +92,6 @@ export interface FileRoutesByTo {
   '/$lang/scan': typeof LangScanRoute
   '/$lang/terms': typeof LangTermsRoute
   '/$lang/welcome': typeof LangWelcomeRoute
-  '/$lang/winners': typeof LangWinnersRoute
   '/$lang': typeof LangIndexRoute
 }
 export interface FileRoutesById {
@@ -113,7 +105,6 @@ export interface FileRoutesById {
   '/$lang/scan': typeof LangScanRoute
   '/$lang/terms': typeof LangTermsRoute
   '/$lang/welcome': typeof LangWelcomeRoute
-  '/$lang/winners': typeof LangWinnersRoute
   '/$lang/': typeof LangIndexRoute
 }
 export interface FileRouteTypes {
@@ -128,7 +119,6 @@ export interface FileRouteTypes {
     | '/$lang/scan'
     | '/$lang/terms'
     | '/$lang/welcome'
-    | '/$lang/winners'
     | '/$lang/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -140,7 +130,6 @@ export interface FileRouteTypes {
     | '/$lang/scan'
     | '/$lang/terms'
     | '/$lang/welcome'
-    | '/$lang/winners'
     | '/$lang'
   id:
     | '__root__'
@@ -153,7 +142,6 @@ export interface FileRouteTypes {
     | '/$lang/scan'
     | '/$lang/terms'
     | '/$lang/welcome'
-    | '/$lang/winners'
     | '/$lang/'
   fileRoutesById: FileRoutesById
 }
@@ -183,13 +171,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/$lang/'
       preLoaderRoute: typeof LangIndexRouteImport
-      parentRoute: typeof LangRoute
-    }
-    '/$lang/winners': {
-      id: '/$lang/winners'
-      path: '/winners'
-      fullPath: '/$lang/winners'
-      preLoaderRoute: typeof LangWinnersRouteImport
       parentRoute: typeof LangRoute
     }
     '/$lang/welcome': {
@@ -252,7 +233,6 @@ interface LangRouteChildren {
   LangScanRoute: typeof LangScanRoute
   LangTermsRoute: typeof LangTermsRoute
   LangWelcomeRoute: typeof LangWelcomeRoute
-  LangWinnersRoute: typeof LangWinnersRoute
   LangIndexRoute: typeof LangIndexRoute
 }
 
@@ -264,7 +244,6 @@ const LangRouteChildren: LangRouteChildren = {
   LangScanRoute: LangScanRoute,
   LangTermsRoute: LangTermsRoute,
   LangWelcomeRoute: LangWelcomeRoute,
-  LangWinnersRoute: LangWinnersRoute,
   LangIndexRoute: LangIndexRoute,
 }
 

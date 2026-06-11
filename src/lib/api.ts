@@ -1,22 +1,17 @@
 /**
- * API 抽象層 — 集中所有後端呼叫。
+ * API 層 — 對接昇恆昌活動後端 `POST /landing/eventpost.php`（same-origin）。
  *
- * 預設使用 Lovable Cloud (Supabase)。日後切換到貴司自家後端時，
- * 只需要把每個方法的實作換成 `fetch(import.meta.env.VITE_API_BASE_URL + ...)` 即可，
- * 元件層不需要修改。
+ * 部署假設：前端打包後與後端同網域（例：events.everrich-group.com/luckydraw*），
+ * 所以這裡直接打相對路徑 `/landing/eventpost.php`，不處理 CORS。
+ *
+ * 後端不回 status code、不檢查重複，因此：
+ *   - 成功判定：HTTP 2xx
+ *   - 重複登錄：前端用 localStorage 黑名單擋
  */
-import { supabase } from "@/integrations/supabase/client";
-import { isTestTn } from "./test-mode";
+import { toEverrichLang } from "./lang-map";
+import type { Lang } from "./i18n";
 
-/**
- * TN（交易單號）格式設定 — 集中管理。
- * 未來要改長度 / 字母數 / 加破折號，只動這裡，scan / manual / API 都會跟著變。
- *
- * 範例：
- *   - 改 11 碼數字：digits: 11, pattern: /^[A-Z]{2}\d{11}$/
- *   - 改 3 碼英文：letters: 3, pattern: /^[A-Z]{3}\d{10}$/
- *   - 完全放寬：pattern: /^.+$/
- */
+/** 交易單號格式 */
 export const TN_FORMAT = {
   letters: 2,
   digits: 10,
@@ -32,109 +27,81 @@ export class InvalidTnError extends Error {
   }
 }
 
-export interface Winner {
-  id: string;
-  prize_name: string;
-  masked_email: string;
-  rank: number;
-  is_backup: boolean;
+const ENDPOINT = "/landing/eventpost.php";
+const EVENT_NAME = "EmailLuckyDraw2026";
+const USED_TNS_KEY = "lucky_used_tns";
+
+function readUsedTns(): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const raw = window.localStorage.getItem(USED_TNS_KEY);
+    if (!raw) return new Set();
+    const arr = JSON.parse(raw);
+    return new Set(Array.isArray(arr) ? arr.map(String) : []);
+  } catch {
+    return new Set();
+  }
 }
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL as string | undefined;
-const USE_REMOTE_API = Boolean(API_BASE);
+function writeUsedTns(set: Set<string>): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(USED_TNS_KEY, JSON.stringify([...set]));
+  } catch {
+    /* ignore */
+  }
+}
 
-async function remote<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: { "Content-Type": "application/json" },
-    ...init,
-  });
-  if (!res.ok) throw new Error(`API ${res.status}`);
-  return res.json();
+function markTnUsed(tn: string): void {
+  const s = readUsedTns();
+  s.add(tn.toUpperCase());
+  writeUsedTns(s);
+}
+
+function isTnUsed(tn: string): boolean {
+  return readUsedTns().has(tn.toUpperCase());
 }
 
 export const api = {
-  async getOrCreateParticipant(input: {
+  /**
+   * 送出抽獎登錄。
+   * - HTTP 2xx → 視為成功
+   * - 命中 localStorage 黑名單 → 直接回 alreadyUsed
+   */
+  async submitEntry(input: {
     email: string;
-    device_id: string;
-    language: string;
-  }): Promise<{ email: string }> {
-    if (USE_REMOTE_API) {
-      return remote("/participants", { method: "POST", body: JSON.stringify(input) });
-    }
-    const { error } = await supabase
-      .from("participants")
-      .insert({
-        email: input.email,
-        device_id: input.device_id,
-        language: input.language,
-      });
-    // 23505 = unique_violation (email already registered) — that's fine for "get or create".
-    if (error && (error as { code?: string }).code !== "23505") throw error;
-    return { email: input.email };
-  },
-
-  async submitLotteryEntry(input: {
     tn: string;
-    email: string;
-    raw_payload?: string;
-    transaction_time?: string;
-    source: "manual" | "qr";
-  }): Promise<{ id: string; alreadyUsed?: boolean }> {
+    lang: Lang;
+  }): Promise<{ alreadyUsed?: boolean }> {
     if (!isValidTnFormat(input.tn)) {
       throw new InvalidTnError();
     }
-    if (USE_REMOTE_API) {
-      return remote("/lottery/submit", { method: "POST", body: JSON.stringify(input) });
-    }
-    // ⚠️ TEST MODE: 只有測試 TN（白名單／前綴）才會加上時間戳後綴讓它可重複輸入；
-    // 真實券號永遠走 unique 檢查。上線前請參考 docs/PRODUCTION_CHECKLIST.md 移除。
-    const tnToInsert = isTestTn(input.tn) ? `${input.tn}__t${Date.now()}` : input.tn;
-    // Generate id client-side so we don't need a SELECT RLS policy to read it back.
-    const entryId =
-      crypto?.randomUUID?.() ??
-      `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    const insertEntry = async () =>
-      supabase.from("lottery_entries").insert({
-        id: entryId,
-        transaction_number: tnToInsert,
-        email: input.email,
-        raw_payload: input.raw_payload ?? null,
-        transaction_time: input.transaction_time ?? null,
-        source: input.source,
-      });
-
-    let { error } = await insertEntry();
-
-    if ((error as { code?: string } | null)?.code === "23503") {
-      const { error: participantError } = await supabase
-        .from("participants")
-        .insert({ email: input.email });
-      const okToRetry =
-        !participantError ||
-        (participantError as { code?: string }).code === "23505";
-      if (okToRetry) {
-        const retry = await insertEntry();
-        error = retry.error;
-      }
+    if (isTnUsed(input.tn)) {
+      return { alreadyUsed: true };
     }
 
-    if (error) {
-      // Postgres unique violation → 此單號已被登錄過
-      if ((error as { code?: string }).code === "23505") {
-        return { id: "", alreadyUsed: true };
-      }
-      throw error;
-    }
-    return { id: entryId };
-  },
+    const uploadData = JSON.stringify({
+      Email: input.email,
+      NoteText: input.tn,
+    });
 
-  async getWinners(): Promise<Winner[]> {
-    if (USE_REMOTE_API) return remote("/winners");
-    const { data, error } = await supabase
-      .from("winners")
-      .select("*")
-      .order("rank", { ascending: true });
-    if (error) throw error;
-    return (data ?? []) as Winner[];
+    const body = new URLSearchParams({
+      lang_type: toEverrichLang(input.lang),
+      eventName: EVENT_NAME,
+      upload_data: uploadData,
+    });
+
+    const res = await fetch(ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: body.toString(),
+    });
+
+    if (!res.ok) {
+      throw new Error(`API ${res.status}`);
+    }
+
+    markTnUsed(input.tn);
+    return {};
   },
 };

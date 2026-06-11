@@ -1,23 +1,59 @@
-## 調整內容
+## 目標
 
-### 1. Header 改用 RICHCLUB Logo
-- 將上傳的 `RICHCLUB_雙LOGO-06.jpg` 透過 lovable-assets 上架為 CDN 圖片（不放進 repo），import pointer JSON 後在 Header 使用
-- 移除 Header 內的 `Gift` icon 和 `t("brand")` 文字
-- Logo 置中顯示在橫幅（黑底白字 logo，header 背景改為深色以配合 logo，或保留卡片底色但 logo 仍清晰；建議 header 改為黑底）
-- 返回箭頭維持在左側
-- **語言切換從 header 右側移除**，改放到 header 下方（PageShell 內，main 上方）置右顯示
+直接覆蓋為**搬遷版**：砍掉所有 Supabase 與用不到的程式碼/欄位，只保留會打到 everrich API 的單一流程。API 不在 dev 測試，假設照格式跑都通。
 
-### 2. 首頁標題上方 icon 移除
-- `src/routes/$lang.index.tsx` 中「昇恆昌購物回饋折扣券 立即登錄抽好禮」上方的 icon 拿掉（保留標題與 CTA）
+## 一、新增
 
-### 技術細節
-- 新增 `src/assets/richclub-logo.jpg.asset.json`（lovable-assets pointer）
-- 修改 `src/components/Header.tsx`：
-  - Header bar：左=返回鈕（或佔位）、中=Logo `<img>`、右=空白佔位（維持置中）
-  - 移除 `<select>` 語言切換
-  - 新增一個 sub-bar（在 header 下方或 PageShell 頂部）放語言切換 select，右對齊
-- 修改 `src/routes/$lang.index.tsx`：移除標題上方的 icon 區塊
+**`src/lib/api.ts`（完全重寫）**
+- 唯一方法：`api.submitEntry({ email, tn, lang })`
+- `POST /landing/eventpost.php`（相對路徑，same-origin）
+- `Content-Type: application/x-www-form-urlencoded`
+  - `lang_type` = `tw / en / jp / kr`
+  - `eventName` = `EmailLuckyDraw2026`（檔內常數）
+  - `upload_data` = `JSON.stringify({ Email, NoteText: tn })`
+- HTTP 2xx 視為成功；非 2xx throw
+- 保留 `TN_FORMAT` / `isValidTnFormat` / `InvalidTnError`
+- localStorage 黑名單 `lucky_used_tns`：送出前命中 → 回 `{ alreadyUsed: true }`，成功後寫入
 
-### 不更動
-- 翻譯字串 `brand` 暫不刪除（其他地方可能仍引用 meta），但 Header 不再顯示
-- BACK_MAP 與返回邏輯不變
+**`src/lib/lang-map.ts`**
+- `toEverrichLang(lang): 'tw'|'en'|'jp'|'kr'`
+
+## 二、改
+
+- **`src/lib/identity.ts`**：移除 `getDeviceId` 與相關 cookie（只保留 email）
+- **`src/lib/server-identity.ts`**：精簡到只剩 `detectInitialLang`，移除 `getSsrIdentity` 的 deviceId
+- **`src/routes/$lang.welcome.tsx`**：移除 `getOrCreateParticipant` 呼叫，email 只寫 localStorage + cookie
+- **`src/routes/$lang.manual.tsx`** / **`src/routes/$lang.scan.tsx`**：改呼叫 `api.submitEntry({ email, tn, lang })`；移除 `source` / `raw_payload` / `transaction_time` 傳遞；命中黑名單顯示「此單號已登錄」
+- **`src/components/Header.tsx`** / 任何導引：移除 `/winners` 入口
+- **locale 檔**（zh/en/ja/ko.json）：移除 `winners.*` 字串
+- **`.env`**：移除 `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` / `VITE_SUPABASE_PROJECT_ID`
+
+## 三、刪
+
+- `src/routes/$lang.winners.tsx`
+- `src/integrations/supabase/`（整個資料夾）
+- `supabase/`（migrations + config.toml）
+- `src/lib/device.ts`（功能搬到 identity.ts）
+- `src/lib/test-mode.ts`
+- `docs/DATABASE_SCHEMA.md`
+- `package.json` 依賴：`@supabase/supabase-js`
+
+## 四、保留
+
+- 所有 UI / 樣式 / logo / 多語系
+- 優惠券 (`src/lib/coupons.ts`)
+- QR scan 解析邏輯（只取出 TN，丟給 `submitEntry`）
+- TanStack Start SSR + `$lang` 路由
+- TN 格式 `^[A-Z]{2}\d{10}$` 前端驗證
+
+## 五、文件
+
+- `docs/MIGRATION_PLAN.md` → 改寫為「搬遷版部署指南」：same-origin 假設、API 規格、localStorage 重複檢查的限制、上線檢查清單
+- `docs/PRODUCTION_CHECKLIST.md` → 同步更新（移除 Supabase 相關項目、移除測試模式項目）
+
+## 六、已知風險（先記錄）
+
+- 後端回應格式未知 → 以 HTTP 2xx 判定成功；實際接通後若格式不符再調 `submitEntry`
+- NoteText 後端無驗證 → 前端 regex 為唯一防線
+- 重複登錄純靠 localStorage → 清快取/換瀏覽器會繞過（後端 API 不支援，接受此取捨）
+- Dev 階段打 `/landing/eventpost.php` 必然 404 → 不在 dev 測試，UI 用 mock console.log 觀察即可（實作上送出後直接視為成功處理 UX flow）

@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LoadingOverlay, Spinner } from "@/components/LoadingOverlay";
 import { api, isValidTnFormat, TN_FORMAT } from "@/lib/api";
-import { getStoredEmail } from "@/lib/device";
+import { getStoredEmail } from "@/lib/identity";
+import type { Lang } from "@/lib/i18n";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/$lang/manual")({
@@ -38,7 +39,7 @@ function ManualPage() {
     }
     setLoading(true);
     try {
-      const result = await api.submitLotteryEntry({ tn, email, source: "manual" });
+      const result = await api.submitEntry({ tn, email, lang: lang as Lang });
       if (result.alreadyUsed) {
         toast.error(t("manual.alreadyUsed"));
         return;
