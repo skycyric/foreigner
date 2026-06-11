@@ -1,59 +1,28 @@
 ## 目標
 
-直接覆蓋為**搬遷版**：砍掉所有 Supabase 與用不到的程式碼/欄位，只保留會打到 everrich API 的單一流程。API 不在 dev 測試，假設照格式跑都通。
+把 `dist/client/` 同時以兩種方式放到 Lovable Cloud Storage：
+- **zip 包**：方便下載後部署到 `events.everrich-group.com`
+- **解壓散檔**：可直接從 Storage 公開網址開啟整個 app
 
-## 一、新增
+## 步驟
 
-**`src/lib/api.ts`（完全重寫）**
-- 唯一方法：`api.submitEntry({ email, tn, lang })`
-- `POST /landing/eventpost.php`（相對路徑，same-origin）
-- `Content-Type: application/x-www-form-urlencoded`
-  - `lang_type` = `tw / en / jp / kr`
-  - `eventName` = `EmailLuckyDraw2026`（檔內常數）
-  - `upload_data` = `JSON.stringify({ Email, NoteText: tn })`
-- HTTP 2xx 視為成功；非 2xx throw
-- 保留 `TN_FORMAT` / `isValidTnFormat` / `InvalidTnError`
-- localStorage 黑名單 `lucky_used_tns`：送出前命中 → 回 `{ alreadyUsed: true }`，成功後寫入
+1. **建立 public bucket** `luckydraw-static`（透過 `supabase--storage_create_bucket`，public=true）
 
-**`src/lib/lang-map.ts`**
-- `toEverrichLang(lang): 'tw'|'en'|'jp'|'kr'`
+2. **重新 build** 一次 `dist/client/`，並把 `vite.config.ts` 的 `base` 設為 `./`（相對路徑），這樣同一份檔案在任何子目錄或 Storage URL 都能載入 assets
 
-## 二、改
+3. **打包 zip** 放到 `/mnt/documents/luckydraw-static.zip`，並上傳到 bucket 根目錄 `luckydraw-static.zip`
 
-- **`src/lib/identity.ts`**：移除 `getDeviceId` 與相關 cookie（只保留 email）
-- **`src/lib/server-identity.ts`**：精簡到只剩 `detectInitialLang`，移除 `getSsrIdentity` 的 deviceId
-- **`src/routes/$lang.welcome.tsx`**：移除 `getOrCreateParticipant` 呼叫，email 只寫 localStorage + cookie
-- **`src/routes/$lang.manual.tsx`** / **`src/routes/$lang.scan.tsx`**：改呼叫 `api.submitEntry({ email, tn, lang })`；移除 `source` / `raw_payload` / `transaction_time` 傳遞；命中黑名單顯示「此單號已登錄」
-- **`src/components/Header.tsx`** / 任何導引：移除 `/winners` 入口
-- **locale 檔**（zh/en/ja/ko.json）：移除 `winners.*` 字串
-- **`.env`**：移除 `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` / `VITE_SUPABASE_PROJECT_ID`
+4. **逐檔上傳解壓內容**到 bucket：
+   - `index.html`
+   - `favicon.ico`
+   - `assets/*.js`、`assets/*.css` 等所有打包產物
 
-## 三、刪
+5. **回報兩個 URL**：
+   - zip 下載：`https://ubntogkzjgacfgdppalv.supabase.co/storage/v1/object/public/luckydraw-static/luckydraw-static.zip`
+   - 直接開啟：`https://ubntogkzjgacfgdppalv.supabase.co/storage/v1/object/public/luckydraw-static/index.html`
 
-- `src/routes/$lang.winners.tsx`
-- `src/integrations/supabase/`（整個資料夾）
-- `supabase/`（migrations + config.toml）
-- `src/lib/device.ts`（功能搬到 identity.ts）
-- `src/lib/test-mode.ts`
-- `docs/DATABASE_SCHEMA.md`
-- `package.json` 依賴：`@supabase/supabase-js`
+## 注意事項
 
-## 四、保留
-
-- 所有 UI / 樣式 / logo / 多語系
-- 優惠券 (`src/lib/coupons.ts`)
-- QR scan 解析邏輯（只取出 TN，丟給 `submitEntry`）
-- TanStack Start SSR + `$lang` 路由
-- TN 格式 `^[A-Z]{2}\d{10}$` 前端驗證
-
-## 五、文件
-
-- `docs/MIGRATION_PLAN.md` → 改寫為「搬遷版部署指南」：same-origin 假設、API 規格、localStorage 重複檢查的限制、上線檢查清單
-- `docs/PRODUCTION_CHECKLIST.md` → 同步更新（移除 Supabase 相關項目、移除測試模式項目）
-
-## 六、已知風險（先記錄）
-
-- 後端回應格式未知 → 以 HTTP 2xx 判定成功；實際接通後若格式不符再調 `submitEntry`
-- NoteText 後端無驗證 → 前端 regex 為唯一防線
-- 重複登錄純靠 localStorage → 清快取/換瀏覽器會繞過（後端 API 不支援，接受此取捨）
-- Dev 階段打 `/landing/eventpost.php` 必然 404 → 不在 dev 測試，UI 用 mock console.log 觀察即可（實作上送出後直接視為成功處理 UX flow）
+- **CORS 風險**：方案 B（直接從 Storage 開啟）會讓前端從 `*.supabase.co` 網域呼叫 `POST /landing/eventpost.php`，屬於跨網域請求。若 `events.everrich-group.com` 後端未設定 `Access-Control-Allow-Origin`，API 會被瀏覽器擋住。正式上線仍建議走方案 A（部署到 `events.everrich-group.com` 同源）。
+- **Workspace policy**：若 workspace 禁止 public bucket，`storage_create_bucket` 會回錯誤；屆時改用 private bucket + signed URL，或請你在 Settings → Privacy & Security 開啟 public buckets。
+- **MIME type**：上傳 `.html`/`.js`/`.css` 時會帶正確 content-type，瀏覽器才會渲染而非下載。
