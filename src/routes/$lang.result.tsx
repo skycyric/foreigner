@@ -5,7 +5,7 @@ import { Check } from "lucide-react";
 import { PageShell } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
-import { getStoredEmail } from "@/lib/device";
+import { getStoredEmail } from "@/lib/identity";
 
 export const Route = createFileRoute("/$lang/result")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -49,7 +49,7 @@ function ResultPage() {
         {tn && (
           <div className="mx-auto mt-5 inline-block rounded-md border border-border bg-muted px-4 py-2 font-mono text-sm">
             <span className="text-muted-foreground">{t("result.tnLabel")}：</span>
-            <span className="font-semibold text-foreground">{tn.split("__t")[0]}</span>
+            <span className="font-semibold text-foreground">{tn}</span>
           </div>
         )}
       </div>

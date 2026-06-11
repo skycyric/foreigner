@@ -2,7 +2,7 @@ import { createFileRoute, useParams, Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
-import { ScanLine, Keyboard, Trophy, Ticket } from "lucide-react";
+import { ScanLine, Keyboard, Ticket } from "lucide-react";
 import { PageShell } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
@@ -98,18 +98,6 @@ function CouponsPage() {
             </div>
           </div>
         ))}
-      </div>
-
-      <div className="mt-8 text-center">
-        <Link
-          to="/$lang/winners"
-          params={{ lang }}
-          onClick={() => setNavigating(t("common.redirecting"))}
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-        >
-          <Trophy className="h-3.5 w-3.5" strokeWidth={1.75} />
-          {t("coupons.viewWinners")}
-        </Link>
       </div>
       <LoadingOverlay open={!!navigating} message={navigating ?? undefined} />
     </PageShell>

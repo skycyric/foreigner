@@ -5,7 +5,7 @@ import { ArrowRight } from "lucide-react";
 import { PageShell } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
-import { getStoredEmail } from "@/lib/device";
+import { getStoredEmail } from "@/lib/identity";
 
 export const Route = createFileRoute("/$lang/")({
   head: ({ params }) => ({
@@ -63,9 +63,6 @@ function HomePage() {
         <div className="flex justify-center gap-4 text-xs text-muted-foreground">
           <Link to="/$lang/about" params={{ lang }} className="underline-offset-2 hover:underline">
             {t("nav.about")}
-          </Link>
-          <Link to="/$lang/winners" params={{ lang }} className="underline-offset-2 hover:underline">
-            {t("nav.winners")}
           </Link>
           <Link to="/$lang/terms" params={{ lang }} className="underline-offset-2 hover:underline">
             {t("nav.terms")}

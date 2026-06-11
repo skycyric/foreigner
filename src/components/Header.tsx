@@ -12,7 +12,6 @@ const BACK_MAP: Record<string, string> = {
   scan: "coupons",
   manual: "coupons",
   coupons: "",
-  winners: "",
   about: "",
   terms: "",
   result: "",

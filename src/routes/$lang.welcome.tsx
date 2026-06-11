@@ -8,8 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { LoadingOverlay, Spinner } from "@/components/LoadingOverlay";
-import { api } from "@/lib/api";
-import { getDeviceId, getStoredEmail, setStoredEmail } from "@/lib/device";
+import { getStoredEmail, setStoredEmail } from "@/lib/identity";
 import { toast } from "sonner";
 
 const DOMAINS = ["gmail.com", "yahoo.com.tw", "hotmail.com", "icloud.com", "outlook.com"];
@@ -163,11 +162,6 @@ function WelcomePage() {
     }
     setLoading(true);
     try {
-      await api.getOrCreateParticipant({
-        email,
-        device_id: getDeviceId(),
-        language: lang,
-      });
       setStoredEmail(email);
       setRedirecting(true);
       navigate({ to: "/$lang/coupons", params: { lang } });
